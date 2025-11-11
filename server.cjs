@@ -9,8 +9,9 @@ app.use(cors());
 const server = http.createServer(app);
 const io = new Server(server, {
     cors: {
-        origin: "http://localhost:5173",
-        methods: ["GET", "POST"]
+        origin: ["http://localhost:5173", "https://timeplaner.no", "http://timeplaner.no"],
+        methods: ["GET", "POST"],
+        credentials: true
     }
 });
 
@@ -198,7 +199,7 @@ io.on('connection', (socket) => {
     });
 });
 
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
     console.log(`🚀 Server running on http://localhost:${PORT}`);
 });
