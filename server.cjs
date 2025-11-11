@@ -1,0 +1,204 @@
+const express = require('express');
+const http = require('http');
+const { Server } = require('socket.io');
+const cors = require('cors');
+
+const app = express();
+app.use(cors());
+
+const server = http.createServer(app);
+const io = new Server(server, {
+    cors: {
+        origin: "http://localhost:5173",
+        methods: ["GET", "POST"]
+    }
+});
+
+// Store active rooms
+const rooms = new Map();
+
+// Generate random room code
+function generateRoomCode() {
+    return Math.random().toString(36).substring(2, 8).toUpperCase();
+}
+
+io.on('connection', (socket) => {
+    console.log('Player connected:', socket.id);
+
+    // Create a new room
+    socket.on('create-room', (playerName) => {
+        const roomCode = generateRoomCode();
+        
+        const room = {
+            code: roomCode,
+            host: socket.id,
+            players: [{
+                id: socket.id,
+                name: playerName,
+                isHost: true,
+                ready: false
+            }],
+            gameStarted: false,
+            gameState: null
+        };
+        
+        rooms.set(roomCode, room);
+        socket.join(roomCode);
+        socket.roomCode = roomCode;
+        
+        console.log(`Room created: ${roomCode} by ${playerName}`);
+        
+        socket.emit('room-created', { roomCode, room });
+    });
+
+    // Join existing room
+    socket.on('join-room', (data) => {
+        const { roomCode, playerName } = data;
+        const room = rooms.get(roomCode);
+        
+        if (!room) {
+            socket.emit('room-error', 'Room not found');
+            return;
+        }
+        
+        if (room.gameStarted) {
+            socket.emit('room-error', 'Game already started');
+            return;
+        }
+        
+        // Add player to room
+        room.players.push({
+            id: socket.id,
+            name: playerName,
+            isHost: false,
+            ready: false
+        });
+        
+        socket.join(roomCode);
+        socket.roomCode = roomCode;
+        
+        console.log(`${playerName} joined room ${roomCode}`);
+        
+        // Notify everyone in room
+        io.to(roomCode).emit('room-updated', room);
+    });
+
+    // Player ready
+    socket.on('player-ready', () => {
+        const roomCode = socket.roomCode;
+        const room = rooms.get(roomCode);
+        
+        if (room) {
+            const player = room.players.find(p => p.id === socket.id);
+            if (player) {
+                player.ready = true;
+                io.to(roomCode).emit('room-updated', room);
+            }
+        }
+    });
+
+    // Start game (host only)
+    socket.on('start-game', () => {
+        const roomCode = socket.roomCode;
+        const room = rooms.get(roomCode);
+        
+        if (room && room.host === socket.id) {
+            room.gameStarted = true;
+            console.log(`Game starting in room ${roomCode}`);
+            io.to(roomCode).emit('game-starting');
+        }
+    });
+
+    // Sync monster spawn
+    socket.on('monster-spawned', (monsterData) => {
+        const roomCode = socket.roomCode;
+        if (roomCode) {
+            socket.to(roomCode).emit('monster-spawned', monsterData);
+        }
+    });
+
+    // Sync monster damage
+    socket.on('monster-damaged', (data) => {
+        const roomCode = socket.roomCode;
+        if (roomCode) {
+            socket.to(roomCode).emit('monster-damaged', data);
+        }
+    });
+
+    // Sync monster killed
+    socket.on('monster-killed', (monsterId) => {
+        const roomCode = socket.roomCode;
+        if (roomCode) {
+            socket.to(roomCode).emit('monster-killed', monsterId);
+        }
+    });
+
+    // Sync base damage
+    socket.on('base-damaged', (damage) => {
+        const roomCode = socket.roomCode;
+        if (roomCode) {
+            socket.to(roomCode).emit('base-damaged', damage);
+        }
+    });
+
+    // Update player stats
+    socket.on('update-stats', (stats) => {
+        const roomCode = socket.roomCode;
+        if (roomCode) {
+            socket.to(roomCode).emit('player-stats-updated', {
+                playerId: socket.id,
+                stats: stats
+            });
+        }
+    });
+
+    // Sync monster positions from host
+    socket.on('sync-monster-positions', (positions) => {
+        const roomCode = socket.roomCode;
+        if (roomCode) {
+            socket.to(roomCode).emit('sync-monster-positions', positions);
+        }
+    });
+
+    // Sync all monsters (full state) - NEW
+    socket.on('sync-all-monsters', (monstersData) => {
+        const roomCode = socket.roomCode;
+        if (roomCode) {
+            socket.to(roomCode).emit('sync-all-monsters', monstersData);
+        }
+    });
+
+    // Disconnect
+    socket.on('disconnect', () => {
+        console.log('Player disconnected:', socket.id);
+        
+        const roomCode = socket.roomCode;
+        if (roomCode) {
+            const room = rooms.get(roomCode);
+            if (room) {
+                // Remove player
+                room.players = room.players.filter(p => p.id !== socket.id);
+                
+                // If host left, assign new host or delete room
+                if (room.host === socket.id) {
+                    if (room.players.length > 0) {
+                        room.host = room.players[0].id;
+                        room.players[0].isHost = true;
+                    } else {
+                        rooms.delete(roomCode);
+                        console.log(`Room ${roomCode} deleted`);
+                        return;
+                    }
+                }
+                
+                // Notify remaining players
+                io.to(roomCode).emit('room-updated', room);
+            }
+        }
+    });
+});
+
+const PORT = 3000;
+server.listen(PORT, () => {
+    console.log(`🚀 Server running on http://localhost:${PORT}`);
+});
