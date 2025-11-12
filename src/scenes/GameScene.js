@@ -497,8 +497,13 @@ export default class GameScene extends Phaser.Scene {
                 this.bossActive = true;
                 this.lastSpawnTime = time;
             } else if (!this.bossActive) {
-                // Spawn normal monsters
-                this.spawnNormalMonster();
+                // Spawn multiple monsters based on player count (2 per player)
+                const playerCount = this.multiplayer.players.length;
+                const spawnsPerInterval = 2 * playerCount;
+
+                for (let i = 0; i < spawnsPerInterval; i++) {
+                    this.spawnNormalMonster();
+                }
                 this.lastSpawnTime = time;
             }
         }
@@ -570,9 +575,10 @@ export default class GameScene extends Phaser.Scene {
         
         // Generate unique monster ID
         const monsterId = `BOSS-${this.multiplayer.socket.id}-${this.nextMonsterId++}`;
-        
-        // BOSS STATS: Much tankier
-        const bossHealth = (50 + (this.difficulty * 50)) * BOSS_HEALTH_MULTIPLIER;
+
+        // BOSS STATS: Much tankier - scales with player count
+        const playerCount = this.multiplayer.players.length;
+        const bossHealth = (50 + (this.difficulty * 50)) * BOSS_HEALTH_MULTIPLIER * playerCount;
         const bossSpeed = (BASE_MONSTER_SPEED + (this.difficulty * 5)) * 0.4; // Even slower! (40% speed)
         
         // Boss data
