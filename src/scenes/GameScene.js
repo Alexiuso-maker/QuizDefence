@@ -438,6 +438,7 @@ export default class GameScene extends Phaser.Scene {
             this.bossActive = false;
             this.monstersThisWave = 0;
             this.monstersSpawnedThisWave = 0; // Reset spawn counter for new wave
+            this.isInCountdown = true; // Pause spawning immediately
             this.difficulty = data.newWave;
             this.waveText.setText(`Wave: ${this.difficulty}`);
             this.spawnInterval = data.newSpawnInterval;
@@ -676,8 +677,8 @@ export default class GameScene extends Phaser.Scene {
             this.countdownInterval = null;
         }
 
-        // Continue countdown without modal, but end it early
-        // Let countdown run for remaining time in background so players can still answer questions
+        // End countdown immediately and resume spawning
+        this.endCountdown();
     }
 
     startCountdown(seconds) {
@@ -1534,6 +1535,7 @@ export default class GameScene extends Phaser.Scene {
             this.bossActive = false;
             this.monstersThisWave = 0;
             this.monstersSpawnedThisWave = 0; // Reset spawn counter for new wave
+            this.isInCountdown = true; // Pause spawning immediately
             this.difficulty++;
             this.waveText.setText(`Wave: ${this.difficulty}`);
 
@@ -1547,7 +1549,7 @@ export default class GameScene extends Phaser.Scene {
 
             // Increase monsters per wave by 10% each wave (rounded up)
             this.monstersPerWave = Math.ceil(this.monstersPerWave * 1.10);
-            
+
             // Sync wave change to other players
             this.multiplayer.socket.emit('wave-completed', {
                 roomCode: this.multiplayer.roomCode,
