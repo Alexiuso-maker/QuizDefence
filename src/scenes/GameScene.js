@@ -1,18 +1,18 @@
 import Phaser from 'phaser';
 
 // --- Game Constants ---
-const LANES = 5;
-const BASE_MONSTER_SPEED = 50; // Increased from 30
-const BASE_HEALTH = 300;
+const LANES = 6;
+const BASE_MONSTER_SPEED = 20; // Increased from 30
+const BASE_HEALTH = 10;
 const MONSTER_DAMAGE = 10;
-const MAX_AMMO = 10;
+const MAX_AMMO = 999; // Changed from 10 - now effectively unlimited
 const AMMO_PER_QUESTION = 2;
 
 // Boss constants
-const BOSS_SPAWN_INTERVAL = 10; // Boss every 10 monsters
+const BOSS_SPAWN_INTERVAL = 15; // Boss every 10 monsters
 const BOSS_SIZE_MULTIPLIER = 2.5; // 2.5x bigger
 const BOSS_HEALTH_MULTIPLIER = 8; // 8x more health
-const BOSS_SPEED_MULTIPLIER = 0.6; // Slower but tankier
+const BOSS_SPEED_MULTIPLIER = 0.8; // Slower but tankier
 
 // Weapon configurations
 const WEAPONS = {
@@ -82,15 +82,15 @@ export default class GameScene extends Phaser.Scene {
         this.score = 0;
         this.baseHealth = BASE_HEALTH;
         this.lastSpawnTime = 0;
-        this.spawnInterval = 500; // Much faster! (was 1000)
+        this.spawnInterval = 1000; // Much faster! (was 1000)
         this.difficulty = 1;
         this.monstersKilled = 0;
         this.monstersSpawned = 0; // Track total spawned for boss timing
         this.monstersPerWave = 10; // 10 monsters per wave
         this.monstersThisWave = 0; // Track kills this wave
         this.bossActive = false; // Is boss currently active?
-        this.isPaused = false;
-        this.ammo = 0;
+         this.isPaused = false;
+        this.ammo = 9999; // Changed from 0 - start with full ammo for testing
         this.selectedWeapon = 'basic';
         this.questionsAnswered = 0;
         this.totalShots = 0;
@@ -535,7 +535,7 @@ export default class GameScene extends Phaser.Scene {
         const monsterId = `${this.multiplayer.socket.id}-${this.nextMonsterId++}`;
         
         // INCREASED HEALTH: Was 30 + (difficulty * 10), now much higher
-        const baseHealth = 100 + (this.difficulty * 30);
+        const baseHealth = 10 + (this.difficulty * 5);
         
         // Monster data for sync
         const monsterData = {
@@ -569,8 +569,8 @@ export default class GameScene extends Phaser.Scene {
         // Generate unique monster ID
         const monsterId = `BOSS-${this.multiplayer.socket.id}-${this.nextMonsterId++}`;
         
-        // BOSS STATS: Much tankier and SLOWER
-        const bossHealth = (150 + (this.difficulty * 50)) * BOSS_HEALTH_MULTIPLIER;
+        // BOSS STATS: Much tankier
+        const bossHealth = (50 + (this.difficulty * 50)) * BOSS_HEALTH_MULTIPLIER;
         const bossSpeed = (BASE_MONSTER_SPEED + (this.difficulty * 5)) * 0.4; // Even slower! (40% speed)
         
         // Boss data
@@ -966,6 +966,14 @@ export default class GameScene extends Phaser.Scene {
 
     createDeathEffect(monster) {
         const isBoss = monster.getData('isBoss') || false;
+        
+        // HIDE health bar immediately when death starts
+        if (monster.healthBar) {
+            monster.healthBar.setVisible(false);
+        }
+        if (monster.bossLabel) {
+            monster.bossLabel.setVisible(false);
+        }
         
         // Death animation
         this.tweens.add({

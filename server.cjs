@@ -9,7 +9,13 @@ app.use(cors());
 const server = http.createServer(app);
 const io = new Server(server, {
     cors: {
-        origin: ["http://localhost:5173", "https://timeplaner.no", "http://timeplaner.no"],
+        origin: [
+            "http://localhost:5173",
+            "https://timeplaner.no",
+            "http://timeplaner.no",
+            "https://www.timeplaner.no",
+            "http://www.timeplaner.no"
+        ],
         methods: ["GET", "POST"],
         credentials: true
     }
@@ -18,10 +24,11 @@ const io = new Server(server, {
 // Store active rooms
 const rooms = new Map();
 
-// Generate random room code
+// Generate random 4-digit room code
 function generateRoomCode() {
-    return Math.random().toString(36).substring(2, 8).toUpperCase();
+    return Math.floor(1000 + Math.random() * 9000).toString();
 }
+
 
 io.on('connection', (socket) => {
     console.log('Player connected:', socket.id);
