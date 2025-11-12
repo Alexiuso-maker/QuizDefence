@@ -294,7 +294,7 @@ export default class GameScene extends Phaser.Scene {
         this.baseHealth = BASE_HEALTH;
         this.lastSpawnTime = 0;
         // Adjust spawn interval and monsters per wave based on player count
-        const playerCount = this.multiplayer.players.length;
+        const playerCount = Math.max(1, this.multiplayer.players.length); // Ensure at least 1 player
         this.spawnInterval = Math.max(300, 1200 - (playerCount * 150)); // Faster with more players
         this.difficulty = 1;
         this.monstersKilled = 0;
@@ -840,7 +840,7 @@ export default class GameScene extends Phaser.Scene {
                 this.lastSpawnTime = time;
             } else if (!this.bossActive) {
                 // Spawn monsters (1-2 per interval depending on player count)
-                const playerCount = this.multiplayer.players.length;
+                const playerCount = Math.max(1, this.multiplayer.players.length); // Ensure at least 1 player
                 // Spawn 1 UFO normally, +1 more for every 2 players
                 const spawnsPerInterval = 1 + Math.floor(playerCount / 2);
 
@@ -944,7 +944,7 @@ export default class GameScene extends Phaser.Scene {
         const monsterId = `BOSS-${this.multiplayer.socket.id}-${this.nextMonsterId++}`;
 
         // BOSS STATS: Much tankier - scales with player count
-        const playerCount = this.multiplayer.players.length;
+        const playerCount = Math.max(1, this.multiplayer.players.length); // Ensure at least 1 player
         const bossHealth = (50 + (this.difficulty * 50)) * BOSS_HEALTH_MULTIPLIER * playerCount;
         const bossSpeed = (BASE_MONSTER_SPEED + (this.difficulty * 5)) * 0.4; // Even slower! (40% speed)
         
@@ -1534,6 +1534,7 @@ export default class GameScene extends Phaser.Scene {
             this.spawnInterval = Math.max(300, this.spawnInterval - 50);
 
             // Base monsters per wave: 2 per player, plus extra based on difficulty
+            const playerCount = Math.max(1, this.multiplayer.players.length); // Ensure at least 1 player
             const difficultyBonus = Math.floor(this.difficulty / 3);
             this.monstersPerWave = (2 * playerCount) + (difficultyBonus * playerCount);
 
