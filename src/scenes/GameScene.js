@@ -301,6 +301,7 @@ export default class GameScene extends Phaser.Scene {
         this.monstersSpawned = 0; // Track total spawned for boss timing
         this.monstersPerWave = 2 * playerCount; // 2 monsters per player per wave
         this.monstersThisWave = 0; // Track kills this wave
+        this.monstersSpawnedThisWave = 0; // Track spawns this wave
         this.bossActive = false; // Is boss currently active?
          this.isPaused = false;
         this.ammo = 0; // Start with 0 ammo, must answer questions
@@ -431,11 +432,12 @@ export default class GameScene extends Phaser.Scene {
         // Listen for wave completion (boss killed)
         this.multiplayer.socket.on('wave-completed', (data) => {
             if (this.isHost) return; // Host already handled this
-            
+
             console.log('Wave completed! New wave:', data.newWave);
-            
+
             this.bossActive = false;
             this.monstersThisWave = 0;
+            this.monstersSpawnedThisWave = 0; // Reset spawn counter for new wave
             this.difficulty = data.newWave;
             this.waveText.setText(`Wave: ${this.difficulty}`);
             this.spawnInterval = data.newSpawnInterval;
@@ -838,14 +840,18 @@ export default class GameScene extends Phaser.Scene {
                 this.spawnBoss();
                 this.bossActive = true;
                 this.lastSpawnTime = time;
-            } else if (!this.bossActive) {
+            } else if (!this.bossActive && this.monstersSpawnedThisWave < this.monstersPerWave) {
                 // Spawn monsters (1-2 per interval depending on player count)
                 const playerCount = Math.max(1, this.multiplayer.players.length); // Ensure at least 1 player
                 // Spawn 1 UFO normally, +1 more for every 2 players
                 const spawnsPerInterval = 1 + Math.floor(playerCount / 2);
 
                 for (let i = 0; i < spawnsPerInterval; i++) {
-                    this.spawnNormalMonster();
+                    // Only spawn if we haven't reached the wave limit
+                    if (this.monstersSpawnedThisWave < this.monstersPerWave) {
+                        this.spawnNormalMonster();
+                        this.monstersSpawnedThisWave++;
+                    }
                 }
                 this.lastSpawnTime = time;
             }
@@ -1527,6 +1533,7 @@ export default class GameScene extends Phaser.Scene {
             // Boss killed! Start next wave
             this.bossActive = false;
             this.monstersThisWave = 0;
+            this.monstersSpawnedThisWave = 0; // Reset spawn counter for new wave
             this.difficulty++;
             this.waveText.setText(`Wave: ${this.difficulty}`);
 
