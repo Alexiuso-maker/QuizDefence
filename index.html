@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz Defense</title>
+    <link rel="stylesheet" href="/src/style.css">
+</head>
+<body>
+    <!-- Lobby Screen -->
+    <div id="lobby-screen">
+        <div class="lobby-container">
+            <h1>🎮 Quiz Defense</h1>
+            <p class="subtitle">Cooperative Math Defense Game</p>
+            
+            <div class="lobby-options">
+                <div class="lobby-card">
+                    <h2>Create Room</h2>
+                    <input type="text" id="host-name" placeholder="Your name..." maxlength="20">
+                    <button id="create-room-btn" class="lobby-btn primary">Create Room</button>
+                </div>
+                
+                <div class="lobby-divider">OR</div>
+                
+                <div class="lobby-card">
+                    <h2>Join Room</h2>
+                    <input type="text" id="join-name" placeholder="Your name..." maxlength="20">
+                    <input type="text" id="room-code-input" placeholder="4-digit code..." maxlength="4" pattern="[0-9]*" inputmode="numeric">
+                    <button id="join-room-btn" class="lobby-btn secondary">Join Room</button>
+                </div>
+            </div>
+            
+            <div id="error-message" class="error-message"></div>
+        </div>
+    </div>
+
+    <!-- Waiting Room -->
+    <div id="waiting-room" style="display: none;">
+        <div class="waiting-container">
+            <h1>Room: <span id="display-room-code"></span></h1>
+            <p class="waiting-subtitle">Waiting for players...</p>
+            
+            <div id="players-list" class="players-list"></div>
+            
+            <div class="waiting-actions">
+                <button id="start-game-btn" class="lobby-btn primary" style="display: none;">Start Game</button>
+                <button id="leave-room-btn" class="lobby-btn secondary">Leave Room</button>
+            </div>
+            
+            <div class="room-info">
+                Share this room code with your classmates!
+            </div>
+        </div>
+    </div>
+
+    <!-- Game Container -->
+    <div id="game-container" style="display: none;"></div>
+    
+    <!-- Question Panel (Side) -->
+    <div id="question-panel" class="panel" style="display: none;">
+        <div id="question-header">
+            <button class="panel-toggle">▶</button>
+            <h3>Answer for Ammo!</h3>
+            <div id="player-name-display"></div>
+            <div id="ammo-display">
+                <span class="ammo-icon">🔫</span>
+                <span id="ammo-count">0</span>
+                <span class="ammo-max">/10</span>
+            </div>
+        </div>
+        
+        <div id="question-content">
+            <div id="question-text"></div>
+            <input id="answer-input" type="text" placeholder="Your answer..." autocomplete="off">
+            <button id="submit-button">Submit Answer</button>
+            <div id="feedback-text"></div>
+        </div>
+        
+        <div id="next-question-btn-container">
+            <button id="next-question-btn">Get New Question</button>
+        </div>
+    </div>
+
+    <!-- Weapon Selection Panel -->
+    <div id="weapon-panel" class="panel" style="display: none;">
+        <button class="panel-toggle">▶</button>
+        <h4>Weapons</h4>
+        <div class="weapon-btn active" data-weapon="basic" data-cost="1">
+            <div class="weapon-name">Basic Shot</div>
+            <div class="weapon-cost">Cost: 1 ammo</div>
+            <div class="weapon-damage">Damage: 15</div>
+        </div>
+        <div class="weapon-btn" data-weapon="power" data-cost="3">
+            <div class="weapon-name">Power Shot</div>
+            <div class="weapon-cost">Cost: 3 ammo</div>
+            <div class="weapon-damage">Damage: 50</div>
+        </div>
+        <div class="weapon-btn" data-weapon="freeze" data-cost="2">
+            <div class="weapon-name">Freeze Shot</div>
+            <div class="weapon-cost">Cost: 2 ammo</div>
+            <div class="weapon-damage">Slow + 20 dmg</div>
+        </div>
+    </div>
+
+    <!-- Players Stats Panel -->
+    <div id="players-stats-panel" class="panel" style="display: none;">
+        <button class="panel-toggle">▶</button>
+        <h4>Team Stats</h4>
+        <div id="players-stats-list"></div>
+    </div>
+
+    <!-- Game Over Modal -->
+    <div id="game-over-modal">
+        <h2>GAME OVER</h2>
+        <div id="final-score"></div>
+        <div id="final-stats"></div>
+        <div id="team-stats"></div>
+        <button id="restart-button">Back to Lobby</button>
+    </div>
+
+    <script type="module" src="/src/main.js"></script>
+</body>
+</html>
