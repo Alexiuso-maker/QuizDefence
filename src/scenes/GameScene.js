@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 
 // --- Game Constants ---
-const LANES = 6;
+const LANES = 15;
 const BASE_MONSTER_SPEED = 15; // Slower UFOs
 const BASE_HEALTH = 10;
 const MONSTER_DAMAGE = 10;
@@ -295,8 +295,11 @@ export default class GameScene extends Phaser.Scene {
         this.lastSpawnTime = 0;
         // Adjust spawn interval and monsters per wave based on player count
         const playerCount = Math.max(1, this.multiplayer.players.length); // Ensure at least 1 player
-        this.baseSpawnInterval = 3000; // Start slow (3 seconds between spawns)
-        this.minSpawnInterval = 800; // End faster (0.8 seconds between spawns)
+
+        // Linear spawn scaling: 2x players = 2x spawn speed
+        // Starts slow, gets faster each wave
+        this.baseSpawnInterval = 5000 / playerCount; // Start very slow (5 seconds)
+        this.minSpawnInterval = 3000 / playerCount; // End moderate (3 seconds)
         this.difficulty = 1;
         this.monstersKilled = 0;
         this.monstersSpawned = 0; // Track total spawned for boss timing
@@ -444,6 +447,8 @@ export default class GameScene extends Phaser.Scene {
             this.difficulty = data.newWave;
             this.waveText.setText(`Wave: ${this.difficulty}`);
             this.monstersPerWave = data.newMonstersPerWave;
+            this.baseSpawnInterval = data.newBaseSpawnInterval;
+            this.minSpawnInterval = data.newMinSpawnInterval;
         });
     }
 
@@ -678,18 +683,24 @@ export default class GameScene extends Phaser.Scene {
         // Players can now answer questions to fill ammo during remaining countdown time
         document.getElementById('upgrade-modal').style.display = 'none';
 
+        // Show wave countdown display so player knows when wave starts
+        document.getElementById('wave-countdown-display').style.display = 'block';
+
         console.log('Upgrade selected! You can now answer questions for ammo while waiting for the wave to start.');
     }
 
     startCountdown(seconds) {
         this.countdownTime = seconds;
         const countdownDisplay = document.getElementById('countdown-seconds');
+        const waveCountdownTime = document.getElementById('wave-countdown-time');
         countdownDisplay.textContent = this.countdownTime;
+        waveCountdownTime.textContent = this.countdownTime;
 
         // Update countdown every second
         const countdownInterval = setInterval(() => {
             this.countdownTime--;
             countdownDisplay.textContent = this.countdownTime;
+            waveCountdownTime.textContent = this.countdownTime;
 
             if (this.countdownTime <= 0) {
                 clearInterval(countdownInterval);
@@ -738,6 +749,9 @@ export default class GameScene extends Phaser.Scene {
 
         // Close modal if still open
         modal.style.display = 'none';
+
+        // Hide wave countdown display
+        document.getElementById('wave-countdown-display').style.display = 'none';
 
         // End countdown state
         this.isInCountdown = false;
@@ -1006,7 +1020,7 @@ export default class GameScene extends Phaser.Scene {
             id: monsterId,
             lane: lane,
             x: x,
-            y: -80,
+            y: 50, // Spawn on screen so boss is immediately visible
             ufoType: bossUfo,
             health: bossHealth,
             speed: bossSpeed,
@@ -1592,11 +1606,17 @@ export default class GameScene extends Phaser.Scene {
             const playerCount = Math.max(1, this.multiplayer.players.length); // Ensure at least 1 player
             this.monstersPerWave = 50 * playerCount;
 
+            // Reduce spawn intervals by 200ms each wave (faster spawning as difficulty increases)
+            this.baseSpawnInterval = Math.max(1000 / playerCount, this.baseSpawnInterval - 200);
+            this.minSpawnInterval = Math.max(500 / playerCount, this.minSpawnInterval - 200);
+
             // Sync wave change to other players
             this.multiplayer.socket.emit('wave-completed', {
                 roomCode: this.multiplayer.roomCode,
                 newWave: this.difficulty,
-                newMonstersPerWave: this.monstersPerWave
+                newMonstersPerWave: this.monstersPerWave,
+                newBaseSpawnInterval: this.baseSpawnInterval,
+                newMinSpawnInterval: this.minSpawnInterval
             });
 
             // Show upgrade modal (slight delay for dramatic effect)
