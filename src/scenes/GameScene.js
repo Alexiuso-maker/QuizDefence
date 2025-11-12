@@ -82,11 +82,13 @@ export default class GameScene extends Phaser.Scene {
         this.score = 0;
         this.baseHealth = BASE_HEALTH;
         this.lastSpawnTime = 0;
-        this.spawnInterval = 1000; // Much faster! (was 1000)
+        // Adjust spawn interval and monsters per wave based on player count
+        const playerCount = this.multiplayer.players.length;
+        this.spawnInterval = Math.max(300, 1200 - (playerCount * 150)); // Faster with more players
         this.difficulty = 1;
         this.monstersKilled = 0;
         this.monstersSpawned = 0; // Track total spawned for boss timing
-        this.monstersPerWave = 10; // 10 monsters per wave
+        this.monstersPerWave = 2 * playerCount; // 2 monsters per player per wave
         this.monstersThisWave = 0; // Track kills this wave
         this.bossActive = false; // Is boss currently active?
          this.isPaused = false;
