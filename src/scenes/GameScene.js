@@ -11,7 +11,7 @@ const AMMO_PER_QUESTION = 2;
 // Boss constants
 const BOSS_SPAWN_INTERVAL = 15; // Boss every 10 monsters
 const BOSS_SIZE_MULTIPLIER = 2.5; // 2.5x bigger
-const BOSS_HEALTH_MULTIPLIER = 8; // 8x more health
+const BOSS_HEALTH_MULTIPLIER = 3; // 3x more health (reduced from 8)
 const BOSS_SPEED_MULTIPLIER = 0.8; // Slower but tankier
 
 // Weapon configurations
@@ -295,11 +295,12 @@ export default class GameScene extends Phaser.Scene {
         this.lastSpawnTime = 0;
         // Adjust spawn interval and monsters per wave based on player count
         const playerCount = Math.max(1, this.multiplayer.players.length); // Ensure at least 1 player
-        this.spawnInterval = Math.max(300, 1200 - (playerCount * 150)); // Faster with more players
+        this.baseSpawnInterval = 2000; // Start slow (2 seconds between spawns)
+        this.minSpawnInterval = 200; // End fast (0.2 seconds between spawns)
         this.difficulty = 1;
         this.monstersKilled = 0;
         this.monstersSpawned = 0; // Track total spawned for boss timing
-        this.monstersPerWave = 2 * playerCount; // 2 monsters per player per wave
+        this.monstersPerWave = 50 * playerCount; // 50 monsters per player per wave
         this.monstersThisWave = 0; // Track kills this wave
         this.monstersSpawnedThisWave = 0; // Track spawns this wave
         this.bossActive = false; // Is boss currently active?
@@ -441,7 +442,6 @@ export default class GameScene extends Phaser.Scene {
             this.isInCountdown = true; // Pause spawning immediately
             this.difficulty = data.newWave;
             this.waveText.setText(`Wave: ${this.difficulty}`);
-            this.spawnInterval = data.newSpawnInterval;
             this.monstersPerWave = data.newMonstersPerWave;
         });
     }
@@ -641,8 +641,11 @@ export default class GameScene extends Phaser.Scene {
 
         modal.style.display = 'flex';
 
-        // Start countdown (20 seconds base, +2 seconds per prepTime upgrade)
-        const prepTime = 20 + (this.myUpgrades.prepTime * 2);
+        // Store available upgrades for potential auto-select
+        this.availableUpgrades = selectedUpgrades;
+
+        // Start countdown (30 seconds base, +2 seconds per prepTime upgrade)
+        const prepTime = 30 + (this.myUpgrades.prepTime * 2);
         this.startCountdown(prepTime);
     }
 
@@ -702,8 +705,42 @@ export default class GameScene extends Phaser.Scene {
     }
 
     endCountdown() {
+        // Auto-select a random upgrade if modal is still open (no selection made)
+        const modal = document.getElementById('upgrade-modal');
+        if (modal.style.display === 'flex' && this.availableUpgrades) {
+            // Filter out maxed upgrades
+            const selectableUpgrades = this.availableUpgrades.filter(upgradeId => {
+                const upgrade = UPGRADES[upgradeId];
+                return this.myUpgrades[upgradeId] < upgrade.maxLevel;
+            });
+
+            // Auto-select a random upgrade
+            if (selectableUpgrades.length > 0) {
+                const randomUpgrade = Phaser.Utils.Array.GetRandom(selectableUpgrades);
+                console.log(`Time's up! Auto-selecting: ${UPGRADES[randomUpgrade].name}`);
+
+                // Apply the upgrade (but don't call selectUpgrade to avoid recursion)
+                this.myUpgrades[randomUpgrade]++;
+
+                // Apply immediate effects
+                if (randomUpgrade === 'baseHealth') {
+                    const bonus = UPGRADES.baseHealth.getBonus(this.myUpgrades.baseHealth);
+                    const newMaxHealth = BASE_HEALTH + bonus;
+                    const healthDiff = newMaxHealth - (BASE_HEALTH + UPGRADES.baseHealth.getBonus(this.myUpgrades.baseHealth - 1));
+                    this.baseHealth = Math.min(this.baseHealth + healthDiff, newMaxHealth);
+                    this.healthText.setText(`Base: ${this.baseHealth}`);
+                    this.applyBaseDamageEffects();
+                }
+
+                if (randomUpgrade === 'maxAmmo') {
+                    const newMax = UPGRADES.maxAmmo.getBonus(this.myUpgrades.maxAmmo);
+                    document.querySelector('.ammo-max').textContent = `/${newMax}`;
+                }
+            }
+        }
+
         // Close modal if still open
-        document.getElementById('upgrade-modal').style.display = 'none';
+        modal.style.display = 'none';
 
         // End countdown state
         this.isInCountdown = false;
@@ -835,26 +872,29 @@ export default class GameScene extends Phaser.Scene {
         if (this.isPaused) return;
 
         // Only host spawns monsters (pause during countdown)
-        if (this.isHost && !this.isInCountdown && time > this.lastSpawnTime + this.spawnInterval) {
-            // Check if we should spawn boss (end of wave)
-            if (this.monstersThisWave >= this.monstersPerWave && !this.bossActive) {
-                this.spawnBoss();
-                this.bossActive = true;
-                this.lastSpawnTime = time;
-            } else if (!this.bossActive && this.monstersSpawnedThisWave < this.monstersPerWave) {
-                // Spawn monsters (1-2 per interval depending on player count)
-                const playerCount = Math.max(1, this.multiplayer.players.length); // Ensure at least 1 player
-                // Spawn 1 UFO normally, +1 more for every 2 players
-                const spawnsPerInterval = 1 + Math.floor(playerCount / 2);
+        if (this.isHost && !this.isInCountdown) {
+            // Calculate dynamic spawn interval based on wave progress
+            // Progress: 0 at start, 1 at end of wave
+            const progress = this.monstersSpawnedThisWave / Math.max(1, this.monstersPerWave);
 
-                for (let i = 0; i < spawnsPerInterval; i++) {
-                    // Only spawn if we haven't reached the wave limit
-                    if (this.monstersSpawnedThisWave < this.monstersPerWave) {
-                        this.spawnNormalMonster();
-                        this.monstersSpawnedThisWave++;
-                    }
+            // Exponential acceleration: slow start, very fast end
+            // Using (1-progress)^3 makes spawning accelerate dramatically
+            const intervalMultiplier = Math.pow(1 - progress, 3);
+            const currentSpawnInterval = this.minSpawnInterval +
+                (this.baseSpawnInterval - this.minSpawnInterval) * intervalMultiplier;
+
+            if (time > this.lastSpawnTime + currentSpawnInterval) {
+                // Check if we should spawn boss (end of wave)
+                if (this.monstersThisWave >= this.monstersPerWave && !this.bossActive) {
+                    this.spawnBoss();
+                    this.bossActive = true;
+                    this.lastSpawnTime = time;
+                } else if (!this.bossActive && this.monstersSpawnedThisWave < this.monstersPerWave) {
+                    // Spawn one monster at a time, but interval accelerates
+                    this.spawnNormalMonster();
+                    this.monstersSpawnedThisWave++;
+                    this.lastSpawnTime = time;
                 }
-                this.lastSpawnTime = time;
             }
         }
         
@@ -959,7 +999,11 @@ export default class GameScene extends Phaser.Scene {
 
         // Boss speed: 1% per wave, then 40% of that for slower boss movement
         const bossSpeed = (BASE_MONSTER_SPEED * Math.pow(1.01, this.difficulty - 1)) * 0.4;
-        
+
+        // Boss size: Start at 1.25x, grow to 3.5x by wave 20
+        // Wave 1: 1.25x, Wave 10: 2.125x, Wave 20: 3x
+        const bossScale = 1.25 + (this.difficulty - 1) * 0.1;
+
         // Boss data
         const bossData = {
             id: monsterId,
@@ -970,7 +1014,8 @@ export default class GameScene extends Phaser.Scene {
             health: bossHealth,
             speed: bossSpeed,
             difficulty: this.difficulty,
-            isBoss: true
+            isBoss: true,
+            bossScale: bossScale
         };
         
         // Create locally
@@ -1032,9 +1077,11 @@ export default class GameScene extends Phaser.Scene {
         
         // Check if boss
         const isBoss = data.isBoss || false;
-        
+
         if (isBoss) {
-            monster.setScale(BOSS_SIZE_MULTIPLIER); // Much bigger!
+            // Use dynamic boss scale that grows with difficulty
+            const bossScale = data.bossScale || 1.25;
+            monster.setScale(bossScale);
             monster.setTint(0xff6b6b); // Red tint for boss
         } else {
             monster.setScale(0.8);
@@ -1544,22 +1591,14 @@ export default class GameScene extends Phaser.Scene {
             this.difficulty++;
             this.waveText.setText(`Wave: ${this.difficulty}`);
 
-            // Make it harder - 10% more monsters each wave
-            this.spawnInterval = Math.max(300, this.spawnInterval - 50);
-
-            // Base monsters per wave: 2 per player, plus extra based on difficulty
+            // Calculate monsters per wave: 50 per player
             const playerCount = Math.max(1, this.multiplayer.players.length); // Ensure at least 1 player
-            const difficultyBonus = Math.floor(this.difficulty / 3);
-            this.monstersPerWave = (2 * playerCount) + (difficultyBonus * playerCount);
-
-            // Increase monsters per wave by 10% each wave (rounded up)
-            this.monstersPerWave = Math.ceil(this.monstersPerWave * 1.10);
+            this.monstersPerWave = 50 * playerCount;
 
             // Sync wave change to other players
             this.multiplayer.socket.emit('wave-completed', {
                 roomCode: this.multiplayer.roomCode,
                 newWave: this.difficulty,
-                newSpawnInterval: this.spawnInterval,
                 newMonstersPerWave: this.monstersPerWave
             });
 
