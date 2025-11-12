@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 
 // --- Game Constants ---
 const LANES = 15;
-const BASE_MONSTER_SPEED = 15; // Slower UFOs
+const BASE_MONSTER_SPEED = 10.5; // 30% slower (was 15)
 const BASE_HEALTH = 10;
 const MONSTER_DAMAGE = 10;
 const MAX_AMMO = 999; // Changed from 10 - now effectively unlimited
@@ -233,34 +233,69 @@ const UPGRADES = {
 };
 
 // --- Question Generator ---
-function generateQuestion(difficulty) {
-    const operations = ['+', '-', '*'];
-    const operation = operations[Phaser.Math.Between(0, Math.min(difficulty - 1, 2))];
-    
-    let num1, num2, question, answer;
-    
-    switch(operation) {
-        case '+':
-            num1 = Phaser.Math.Between(difficulty * 5, difficulty * 15);
-            num2 = Phaser.Math.Between(1, difficulty * 10);
-            question = `${num1} + ${num2}`;
-            answer = num1 + num2;
-            break;
-        case '-':
-            num1 = Phaser.Math.Between(difficulty * 10, difficulty * 20);
-            num2 = Phaser.Math.Between(1, difficulty * 10);
-            question = `${num1} - ${num2}`;
-            answer = num1 - num2;
-            break;
-        case '*':
-            num1 = Phaser.Math.Between(2, difficulty + 5);
-            num2 = Phaser.Math.Between(2, Math.min(difficulty + 3, 12));
-            question = `${num1} × ${num2}`;
-            answer = num1 * num2;
-            break;
+// Modular question type system - easy to add new types in the future
+const QUESTION_TYPES = {
+    // Addition crossing over 10 (result between 10-30)
+    additionCrossing10: {
+        name: 'Addition Crossing 10',
+        generate: () => {
+            // Pick two numbers that add to between 10-30
+            // One number should be less than 10 to ensure crossing
+            const num1 = Phaser.Math.Between(4, 9);
+            const num2 = Phaser.Math.Between(Math.max(1, 10 - num1), 25);
+            const answer = num1 + num2;
+
+            // Only return if answer is in desired range
+            if (answer >= 10 && answer <= 30) {
+                return {
+                    question: `${num1} + ${num2}`,
+                    answer: answer.toString()
+                };
+            }
+            // Retry if not in range
+            return QUESTION_TYPES.additionCrossing10.generate();
+        }
+    },
+
+    // Subtraction crossing under 20 or 10 (starting 10-30, crossing down)
+    subtractionCrossing: {
+        name: 'Subtraction Crossing 10/20',
+        generate: () => {
+            // Start with number between 11-30
+            const num1 = Phaser.Math.Between(11, 30);
+
+            // Subtract enough to cross under 10 or 20
+            let num2;
+            if (num1 >= 20) {
+                // Cross under 20: result between 10-19
+                num2 = Phaser.Math.Between(Math.max(1, num1 - 19), Math.min(num1 - 10, 15));
+            } else {
+                // Cross under 10: result between 1-9
+                num2 = Phaser.Math.Between(Math.max(1, num1 - 9), Math.min(num1 - 1, 15));
+            }
+
+            const answer = num1 - num2;
+
+            // Validate result is positive and in expected range
+            if (answer >= 1 && answer <= 30) {
+                return {
+                    question: `${num1} - ${num2}`,
+                    answer: answer.toString()
+                };
+            }
+            // Retry if not valid
+            return QUESTION_TYPES.subtractionCrossing.generate();
+        }
     }
-    
-    return { question, answer: answer.toString() };
+};
+
+function generateQuestion(difficulty) {
+    // Select random question type from available types
+    const questionTypeKeys = Object.keys(QUESTION_TYPES);
+    const randomType = questionTypeKeys[Phaser.Math.Between(0, questionTypeKeys.length - 1)];
+
+    // Generate question using selected type
+    return QUESTION_TYPES[randomType].generate();
 }
 
 // --- Main Game Scene ---
@@ -291,10 +326,13 @@ export default class GameScene extends Phaser.Scene {
         
         // Initialize game state
         this.score = 0;
-        this.baseHealth = BASE_HEALTH;
         this.lastSpawnTime = 0;
+
         // Adjust spawn interval and monsters per wave based on player count
         const playerCount = Math.max(1, this.multiplayer.players.length); // Ensure at least 1 player
+
+        // Scale base health with player count (linear scaling)
+        this.baseHealth = BASE_HEALTH * playerCount;
 
         // Linear spawn scaling: 2x players = 2x spawn speed
         // Starts slow, gets faster each wave
@@ -303,7 +341,7 @@ export default class GameScene extends Phaser.Scene {
         this.difficulty = 1;
         this.monstersKilled = 0;
         this.monstersSpawned = 0; // Track total spawned for boss timing
-        this.monstersPerWave = 50 * playerCount; // 50 monsters per player per wave
+        this.monstersPerWave = 30 * playerCount; // Start with 30 monsters per player per wave
         this.monstersThisWave = 0; // Track kills this wave
         this.monstersSpawnedThisWave = 0; // Track spawns this wave
         this.bossActive = false; // Is boss currently active?
@@ -800,7 +838,11 @@ export default class GameScene extends Phaser.Scene {
         } else {
             feedbackText.textContent = '✗ Incorrect! Try again!';
             feedbackText.className = 'feedback-incorrect';
-            
+
+            // Clear the wrong answer so player can try again
+            document.getElementById('answer-input').value = '';
+            document.getElementById('answer-input').focus();
+
             // Clear feedback after delay
             this.time.delayedCall(1500, () => {
                 feedbackText.textContent = '';
@@ -977,7 +1019,7 @@ export default class GameScene extends Phaser.Scene {
             id: monsterId,
             lane: lane,
             x: x,
-            y: -40,
+            y: 20, // Spawn closer to screen (was -40)
             ufoType: randomUfo,
             health: baseHealth,
             speed: monsterSpeed,
@@ -1602,9 +1644,11 @@ export default class GameScene extends Phaser.Scene {
             this.difficulty++;
             this.waveText.setText(`Wave: ${this.difficulty}`);
 
-            // Calculate monsters per wave: 50 per player
+            // Calculate monsters per wave: starts at 30, increases with difficulty
             const playerCount = Math.max(1, this.multiplayer.players.length); // Ensure at least 1 player
-            this.monstersPerWave = 50 * playerCount;
+            // Increase by 2 monsters per wave: Wave 1=30, Wave 2=32, Wave 3=34, etc.
+            const monstersPerPlayer = 30 + (this.difficulty - 1) * 2;
+            this.monstersPerWave = monstersPerPlayer * playerCount;
 
             // Reduce spawn intervals by 200ms each wave (faster spawning as difficulty increases)
             this.baseSpawnInterval = Math.max(1000 / playerCount, this.baseSpawnInterval - 200);
@@ -1766,7 +1810,9 @@ export default class GameScene extends Phaser.Scene {
 
     applyBaseDamageEffects() {
         // Update base health bar
-        const healthRatio = this.baseHealth / BASE_HEALTH;
+        const playerCount = Math.max(1, this.multiplayer.players.length);
+        const maxHealth = BASE_HEALTH * playerCount;
+        const healthRatio = this.baseHealth / maxHealth;
         this.baseHealthBarFill.width = 400 * healthRatio;
         
         // Change color based on health
