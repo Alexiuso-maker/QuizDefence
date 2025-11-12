@@ -2,7 +2,11 @@ import Phaser from 'phaser';
 
 // --- Game Constants ---
 const LANES = 6;
+<<<<<<< HEAD
 const BASE_MONSTER_SPEED = 15; // Increased from 30
+=======
+const BASE_MONSTER_SPEED = 20; // Increased from 30
+>>>>>>> ba229b2fa0babc1be228e012a4464df0245b6f70
 const BASE_HEALTH = 10;
 const MONSTER_DAMAGE = 10;
 const MAX_AMMO = 999; // Changed from 10 - now effectively unlimited
