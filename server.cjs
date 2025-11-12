@@ -161,11 +161,23 @@ io.on('connection', (socket) => {
         }
     });
 
-    // Sync all monsters (full state) - NEW
+    // Sync all monsters (full state)
     socket.on('sync-all-monsters', (monstersData) => {
         const roomCode = socket.roomCode;
         if (roomCode) {
             socket.to(roomCode).emit('sync-all-monsters', monstersData);
+        }
+    });
+
+    // Wave completed (boss killed) - NEW
+    socket.on('wave-completed', (data) => {
+        const { roomCode, newWave, newSpawnInterval, newMonstersPerWave } = data;
+        if (roomCode) {
+            socket.to(roomCode).emit('wave-completed', {
+                newWave,
+                newSpawnInterval,
+                newMonstersPerWave
+            });
         }
     });
 
