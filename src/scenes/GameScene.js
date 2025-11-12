@@ -907,10 +907,13 @@ export default class GameScene extends Phaser.Scene {
             this.monstersThisWave = 0;
             this.difficulty++;
             this.waveText.setText(`Wave: ${this.difficulty}`);
-            
-            // Make it harder
+
+            // Make it harder - scale with player count
+            const playerCount = this.multiplayer.players.length;
             this.spawnInterval = Math.max(300, this.spawnInterval - 50);
-            this.monstersPerWave = Math.min(15, 10 + Math.floor(this.difficulty / 3)); // More monsters per wave as difficulty increases
+            // Base monsters per wave: 2 per player, plus extra based on difficulty
+            const difficultyBonus = Math.floor(this.difficulty / 3);
+            this.monstersPerWave = (2 * playerCount) + (difficultyBonus * playerCount);
             
             // Sync wave change to other players
             this.multiplayer.socket.emit('wave-completed', {
