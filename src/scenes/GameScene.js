@@ -123,10 +123,10 @@ const UPGRADES = {
         description: 'Increase ammo capacity',
         icon: '📦',
         maxLevel: Infinity,
-        getBonus: (level) => 10 + (level * 3),
+        getBonus: (level) => 5 + (level * 3),
         getDescription: (level) => {
-            const current = 10 + (level * 3);
-            const next = 10 + ((level + 1) * 3);
+            const current = 5 + (level * 3);
+            const next = 5 + ((level + 1) * 3);
             return `Max ammo: ${current} (Next: ${next})`;
         }
     },
@@ -295,8 +295,8 @@ export default class GameScene extends Phaser.Scene {
         this.lastSpawnTime = 0;
         // Adjust spawn interval and monsters per wave based on player count
         const playerCount = Math.max(1, this.multiplayer.players.length); // Ensure at least 1 player
-        this.baseSpawnInterval = 2000; // Start slow (2 seconds between spawns)
-        this.minSpawnInterval = 200; // End fast (0.2 seconds between spawns)
+        this.baseSpawnInterval = 3000; // Start slow (3 seconds between spawns)
+        this.minSpawnInterval = 800; // End faster (0.8 seconds between spawns)
         this.difficulty = 1;
         this.monstersKilled = 0;
         this.monstersSpawned = 0; // Track total spawned for boss timing
@@ -305,7 +305,7 @@ export default class GameScene extends Phaser.Scene {
         this.monstersSpawnedThisWave = 0; // Track spawns this wave
         this.bossActive = false; // Is boss currently active?
          this.isPaused = false;
-        this.ammo = 5; // Start with 5 ammo
+        this.ammo = 0; // Start with 0 ammo, must answer questions to get ammo
         this.selectedWeapon = 'basic';
         this.questionsAnswered = 0;
         this.totalShots = 0;
