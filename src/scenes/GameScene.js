@@ -1532,6 +1532,12 @@ export default class GameScene extends Phaser.Scene {
 
             // Make it harder - 10% more monsters each wave
             this.spawnInterval = Math.max(300, this.spawnInterval - 50);
+<<<<<<< HEAD
+=======
+            // Base monsters per wave: 2 per player, plus extra based on difficulty
+            const difficultyBonus = Math.floor(this.difficulty / 3);
+            this.monstersPerWave = (2 * playerCount) + (difficultyBonus * playerCount);
+>>>>>>> origin/main
             // Increase monsters per wave by 10% each wave (rounded up)
             this.monstersPerWave = Math.ceil(this.monstersPerWave * 1.10);
             
