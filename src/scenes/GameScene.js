@@ -305,7 +305,7 @@ export default class GameScene extends Phaser.Scene {
         this.monstersSpawnedThisWave = 0; // Track spawns this wave
         this.bossActive = false; // Is boss currently active?
          this.isPaused = false;
-        this.ammo = 0; // Start with 0 ammo, must answer questions
+        this.ammo = 5; // Start with 5 ammo
         this.selectedWeapon = 'basic';
         this.questionsAnswered = 0;
         this.totalShots = 0;
@@ -338,8 +338,9 @@ export default class GameScene extends Phaser.Scene {
         // Set up UI
         this.setupUI();
         this.setupQuestionPanel();
-        this.setupWeaponPanel();
-        
+        // Weapon panel removed - players use basic weapon only
+        // this.setupWeaponPanel();
+
         // Create base visual
         this.createBase();
         
@@ -571,8 +572,10 @@ export default class GameScene extends Phaser.Scene {
         nextQuestionBtn.onclick = () => {
             this.generateNewQuestion();
         };
-        
-        // Update ammo display
+
+        // Initialize ammo display with correct max ammo
+        const maxAmmo = UPGRADES.maxAmmo.getBonus(this.myUpgrades.maxAmmo);
+        document.querySelector('.ammo-max').textContent = `/${maxAmmo}`;
         this.updateAmmoDisplay();
     }
 
@@ -671,17 +674,11 @@ export default class GameScene extends Phaser.Scene {
             document.querySelector('.ammo-max').textContent = `/${newMax}`;
         }
 
-        // Close modal
+        // Close modal but keep countdown running
+        // Players can now answer questions to fill ammo during remaining countdown time
         document.getElementById('upgrade-modal').style.display = 'none';
 
-        // Clear the countdown interval if still running
-        if (this.countdownInterval) {
-            clearInterval(this.countdownInterval);
-            this.countdownInterval = null;
-        }
-
-        // End countdown immediately and resume spawning
-        this.endCountdown();
+        console.log('Upgrade selected! You can now answer questions for ammo while waiting for the wave to start.');
     }
 
     startCountdown(seconds) {
@@ -767,21 +764,21 @@ export default class GameScene extends Phaser.Scene {
         const isCorrect = answer === this.currentQuestion.answer;
 
         if (isCorrect) {
-            // Calculate ammo gain with bonus ammo upgrade
-            const baseAmmo = AMMO_PER_QUESTION;
-            const bonusAmmo = UPGRADES.bonusAmmo.getBonus(this.myUpgrades.bonusAmmo);
-            const totalAmmo = baseAmmo + bonusAmmo;
+            // Give FULL ammo on correct answer
+            const maxAmmo = UPGRADES.maxAmmo.getBonus(this.myUpgrades.maxAmmo);
+            const ammoGained = maxAmmo - this.ammo;
 
-            feedbackText.textContent = `✓ Correct! +${totalAmmo} Ammo`;
+            feedbackText.textContent = `✓ Correct! Ammo Full!`;
             feedbackText.className = 'feedback-correct';
 
-            // Add ammo
-            this.addAmmo(totalAmmo);
+            // Set ammo to max
+            this.ammo = maxAmmo;
+            this.updateAmmoDisplay();
             this.questionsAnswered++;
-            
+
             // Update stats
             this.updateMyStats();
-            
+
             // Generate new question after delay
             this.time.delayedCall(800, () => {
                 this.generateNewQuestion();

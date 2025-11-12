@@ -143,11 +143,10 @@ class MultiplayerManager {
         document.getElementById('waiting-room').style.display = 'none';
         document.getElementById('game-container').style.display = 'block';
         document.getElementById('question-panel').style.display = 'block';
-        document.getElementById('weapon-panel').style.display = 'block';
         document.getElementById('players-stats-panel').style.display = 'block';
-        
+
         document.getElementById('player-name-display').textContent = `Player: ${this.playerName}`;
-        
+
         window.dispatchEvent(new CustomEvent('start-multiplayer-game', {
             detail: { multiplayer: this }
         }));
