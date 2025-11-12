@@ -641,8 +641,8 @@ export default class GameScene extends Phaser.Scene {
 
         modal.style.display = 'flex';
 
-        // Start countdown
-        const prepTime = 10 + (this.myUpgrades.prepTime * 2);
+        // Start countdown (20 seconds base, +2 seconds per prepTime upgrade)
+        const prepTime = 20 + (this.myUpgrades.prepTime * 2);
         this.startCountdown(prepTime);
     }
 
@@ -917,7 +917,10 @@ export default class GameScene extends Phaser.Scene {
         
         // INCREASED HEALTH: Was 30 + (difficulty * 10), now much higher
         const baseHealth = 10 + (this.difficulty * 5);
-        
+
+        // Speed increases by 1% per wave (much more gradual)
+        const monsterSpeed = BASE_MONSTER_SPEED * Math.pow(1.01, this.difficulty - 1);
+
         // Monster data for sync
         const monsterData = {
             id: monsterId,
@@ -926,7 +929,7 @@ export default class GameScene extends Phaser.Scene {
             y: -40,
             ufoType: randomUfo,
             health: baseHealth,
-            speed: BASE_MONSTER_SPEED + (this.difficulty * 8),
+            speed: monsterSpeed,
             difficulty: this.difficulty,
             isBoss: false
         };
@@ -953,7 +956,9 @@ export default class GameScene extends Phaser.Scene {
         // BOSS STATS: Much tankier - scales with player count
         const playerCount = Math.max(1, this.multiplayer.players.length); // Ensure at least 1 player
         const bossHealth = (50 + (this.difficulty * 50)) * BOSS_HEALTH_MULTIPLIER * playerCount;
-        const bossSpeed = (BASE_MONSTER_SPEED + (this.difficulty * 5)) * 0.4; // Even slower! (40% speed)
+
+        // Boss speed: 1% per wave, then 40% of that for slower boss movement
+        const bossSpeed = (BASE_MONSTER_SPEED * Math.pow(1.01, this.difficulty - 1)) * 0.4;
         
         // Boss data
         const bossData = {
