@@ -21,6 +21,217 @@ const WEAPONS = {
     freeze: { damage: 20, cost: 2, color: 0x9b59b6, name: 'Freeze Shot', freeze: true }
 };
 
+// Upgrade System
+const UPGRADES = {
+    damage: {
+        id: 'damage',
+        name: 'Damage Boost',
+        description: 'Increase your shot damage',
+        icon: '⚡',
+        maxLevel: Infinity,
+        getBonus: (level) => level * 5,
+        getDescription: (level) => `+${level * 5} damage per shot (Next: +${(level + 1) * 5})`
+    },
+    critical: {
+        id: 'critical',
+        name: 'Critical Strike',
+        description: 'Chance to deal massive damage',
+        icon: '💥',
+        maxLevel: Infinity,
+        getBonus: (level) => {
+            const chance = Math.min(10 + (level * 5), 50);
+            const multiplier = 2 + (level * 0.25);
+            return { chance, multiplier };
+        },
+        getDescription: (level) => {
+            const current = Math.min(10 + (level * 5), 50);
+            const next = Math.min(10 + ((level + 1) * 5), 50);
+            const multCurrent = 2 + (level * 0.25);
+            const multNext = 2 + ((level + 1) * 0.25);
+            return `${current}% chance for ${multCurrent.toFixed(1)}x damage (Next: ${next}% for ${multNext.toFixed(1)}x)`;
+        }
+    },
+    pierce: {
+        id: 'pierce',
+        name: 'Pierce Shot',
+        description: 'Shots hit multiple enemies in a lane',
+        icon: '🎯',
+        maxLevel: 3,
+        getBonus: (level) => Math.min(level, 3),
+        getDescription: (level) => {
+            if (level === 0) return 'Hit +1 enemy behind target (Next: +1 pierce)';
+            if (level === 1) return 'Hit +1 enemy (Next: +2 enemies)';
+            if (level === 2) return 'Hit +2 enemies (Next: All in lane)';
+            return 'Hit ALL enemies in lane (MAX)';
+        }
+    },
+    executioner: {
+        id: 'executioner',
+        name: 'Executioner',
+        description: 'Instantly kill low-health enemies',
+        icon: '💀',
+        maxLevel: Infinity,
+        getBonus: (level) => 20 + (level * 10),
+        getDescription: (level) => {
+            const current = 20 + (level * 10);
+            const next = 20 + ((level + 1) * 10);
+            return `Kill enemies below ${current}% HP (Next: ${next}%)`;
+        }
+    },
+    slow: {
+        id: 'slow',
+        name: 'Slow',
+        description: 'Slow down enemies (stacks with team)',
+        icon: '🐌',
+        maxLevel: Infinity,
+        getBonus: (level) => level * 0.2,
+        getDescription: (level) => {
+            const current = (level * 0.2).toFixed(1);
+            const next = ((level + 1) * 0.2).toFixed(1);
+            return `50% slow for ${current}s (Next: ${next}s)`;
+        }
+    },
+    freeze: {
+        id: 'freeze',
+        name: 'Freeze',
+        description: 'Completely stop enemies (stacks with team)',
+        icon: '❄️',
+        maxLevel: Infinity,
+        getBonus: (level) => level * 0.1,
+        getDescription: (level) => {
+            const current = (level * 0.1).toFixed(1);
+            const next = ((level + 1) * 0.1).toFixed(1);
+            return `100% stop for ${current}s (Next: ${next}s)`;
+        }
+    },
+    splash: {
+        id: 'splash',
+        name: 'Splash Damage',
+        description: 'Damage enemies near your target',
+        icon: '💢',
+        maxLevel: Infinity,
+        getBonus: (level) => Math.min(25 + (level * 25), 100),
+        getDescription: (level) => {
+            const current = Math.min(25 + (level * 25), 100);
+            const next = Math.min(25 + ((level + 1) * 25), 100);
+            return `${current}% damage to nearby enemies (Next: ${next}%)`;
+        }
+    },
+    maxAmmo: {
+        id: 'maxAmmo',
+        name: 'Max Ammo',
+        description: 'Increase ammo capacity',
+        icon: '📦',
+        maxLevel: Infinity,
+        getBonus: (level) => 10 + (level * 3),
+        getDescription: (level) => {
+            const current = 10 + (level * 3);
+            const next = 10 + ((level + 1) * 3);
+            return `Max ammo: ${current} (Next: ${next})`;
+        }
+    },
+    bonusAmmo: {
+        id: 'bonusAmmo',
+        name: 'Bonus Ammo',
+        description: 'Extra ammo per correct answer',
+        icon: '🎁',
+        maxLevel: Infinity,
+        getBonus: (level) => level,
+        getDescription: (level) => `+${2 + level} ammo per answer (Next: +${2 + level + 1})`
+    },
+    efficientShooter: {
+        id: 'efficientShooter',
+        name: 'Efficient Shooter',
+        description: 'Chance for free shots',
+        icon: '♻️',
+        maxLevel: Infinity,
+        getBonus: (level) => Math.min(level * 5, 50),
+        getDescription: (level) => {
+            const current = Math.min(level * 5, 50);
+            const next = Math.min((level + 1) * 5, 50);
+            return `${current}% free shots (Next: ${next}%)`;
+        }
+    },
+    startingAmmo: {
+        id: 'startingAmmo',
+        name: 'Starting Ammo',
+        description: 'Begin waves with bonus ammo',
+        icon: '🚀',
+        maxLevel: Infinity,
+        getBonus: (level) => level * 3,
+        getDescription: (level) => {
+            const current = level * 3;
+            const next = (level + 1) * 3;
+            return `Start with +${current} ammo (Next: +${next})`;
+        }
+    },
+    scavenger: {
+        id: 'scavenger',
+        name: 'Ammo Scavenger',
+        description: 'Chance to gain ammo on kill',
+        icon: '🔍',
+        maxLevel: Infinity,
+        getBonus: (level) => Math.min(10 + (level * 5), 50),
+        getDescription: (level) => {
+            const current = Math.min(10 + (level * 5), 50);
+            const next = Math.min(10 + ((level + 1) * 5), 50);
+            return `${current}% chance for +1 ammo on kill (Next: ${next}%)`;
+        }
+    },
+    baseHealth: {
+        id: 'baseHealth',
+        name: 'Base Health',
+        description: 'Increase base maximum health',
+        icon: '💚',
+        maxLevel: Infinity,
+        getBonus: (level) => 2 + (level * 2),
+        getDescription: (level) => {
+            const current = BASE_HEALTH + (2 + (level * 2));
+            const next = BASE_HEALTH + (2 + ((level + 1) * 2));
+            return `Base HP: ${current} (Next: ${next})`;
+        }
+    },
+    lifeSteal: {
+        id: 'lifeSteal',
+        name: 'Life Steal',
+        description: 'Heal base on kills',
+        icon: '💖',
+        maxLevel: 4,
+        getBonus: (level) => Math.max(5 - level, 2),
+        getDescription: (level) => {
+            const current = Math.max(5 - level, 2);
+            const next = Math.max(5 - level - 1, 2);
+            return `Heal 1 HP per ${current} kills (Next: per ${next} kills)`;
+        }
+    },
+    bossKiller: {
+        id: 'bossKiller',
+        name: 'Boss Killer',
+        description: 'Extra damage to bosses',
+        icon: '👑',
+        maxLevel: Infinity,
+        getBonus: (level) => 50 + (level * 50),
+        getDescription: (level) => {
+            const current = 50 + (level * 50);
+            const next = 50 + ((level + 1) * 50);
+            return `+${current}% boss damage (Next: +${next}%)`;
+        }
+    },
+    prepTime: {
+        id: 'prepTime',
+        name: 'Extended Prep',
+        description: 'More time between waves',
+        icon: '⏰',
+        maxLevel: Infinity,
+        getBonus: (level) => 10 + (level * 2),
+        getDescription: (level) => {
+            const current = 10 + (level * 2);
+            const next = 10 + ((level + 1) * 2);
+            return `${current}s prep time (Next: ${next}s)`;
+        }
+    }
+};
+
 // --- Question Generator ---
 function generateQuestion(difficulty) {
     const operations = ['+', '-', '*'];
@@ -92,14 +303,25 @@ export default class GameScene extends Phaser.Scene {
         this.monstersThisWave = 0; // Track kills this wave
         this.bossActive = false; // Is boss currently active?
          this.isPaused = false;
-        this.ammo = 9999; // Changed from 0 - start with full ammo for testing
+        this.ammo = 0; // Start with 0 ammo, must answer questions
         this.selectedWeapon = 'basic';
         this.questionsAnswered = 0;
         this.totalShots = 0;
         this.nextMonsterId = 0;
-        
+        this.killsSinceLastHeal = 0; // For life steal tracking
+
         // Monster tracking
         this.monsters = new Map(); // monsterId -> monster
+
+        // Player upgrades tracking
+        this.myUpgrades = {}; // My upgrade levels { upgradeId: level }
+        Object.keys(UPGRADES).forEach(key => {
+            this.myUpgrades[key] = 0;
+        });
+
+        // Wave countdown state
+        this.isInCountdown = false;
+        this.countdownTime = 0;
         
         // Player stats tracking
         this.playerStats = new Map();
@@ -378,6 +600,120 @@ export default class GameScene extends Phaser.Scene {
         });
     }
 
+    showUpgradeModal() {
+        // Pause game
+        this.isInCountdown = true;
+
+        // Get 3 random upgrades
+        const upgradeKeys = Object.keys(UPGRADES);
+        const shuffled = Phaser.Utils.Array.Shuffle([...upgradeKeys]);
+        const selectedUpgrades = shuffled.slice(0, 3);
+
+        // Show modal
+        const modal = document.getElementById('upgrade-modal');
+        const upgradeOptions = document.getElementById('upgrade-options');
+        upgradeOptions.innerHTML = '';
+
+        selectedUpgrades.forEach(upgradeId => {
+            const upgrade = UPGRADES[upgradeId];
+            const currentLevel = this.myUpgrades[upgradeId];
+            const isMaxLevel = currentLevel >= upgrade.maxLevel;
+
+            const card = document.createElement('div');
+            card.className = 'upgrade-card' + (isMaxLevel ? ' max-level' : '');
+            card.innerHTML = `
+                <div class="upgrade-icon">${upgrade.icon}</div>
+                <div class="upgrade-name">${upgrade.name}</div>
+                <div class="upgrade-level">Level ${currentLevel}${isMaxLevel ? ' (MAX)' : ` → ${currentLevel + 1}`}</div>
+                <div class="upgrade-description">${upgrade.description}</div>
+                <div class="upgrade-effect">${upgrade.getDescription(currentLevel)}</div>
+            `;
+
+            if (!isMaxLevel) {
+                card.onclick = () => this.selectUpgrade(upgradeId);
+            }
+
+            upgradeOptions.appendChild(card);
+        });
+
+        modal.style.display = 'flex';
+
+        // Start countdown
+        const prepTime = 10 + (this.myUpgrades.prepTime * 2);
+        this.startCountdown(prepTime);
+    }
+
+    selectUpgrade(upgradeId) {
+        // Increase upgrade level
+        this.myUpgrades[upgradeId]++;
+
+        console.log(`Selected upgrade: ${UPGRADES[upgradeId].name} (Level ${this.myUpgrades[upgradeId]})`);
+
+        // Apply immediate effects
+        if (upgradeId === 'baseHealth') {
+            const bonus = UPGRADES.baseHealth.getBonus(this.myUpgrades.baseHealth);
+            const newMaxHealth = BASE_HEALTH + bonus;
+            const healthDiff = newMaxHealth - (BASE_HEALTH + UPGRADES.baseHealth.getBonus(this.myUpgrades.baseHealth - 1));
+            this.baseHealth = Math.min(this.baseHealth + healthDiff, newMaxHealth);
+            this.healthText.setText(`Base: ${this.baseHealth}`);
+            this.applyBaseDamageEffects(); // Update health bar visual
+        }
+
+        if (upgradeId === 'maxAmmo') {
+            const newMax = UPGRADES.maxAmmo.getBonus(this.myUpgrades.maxAmmo);
+            // Update max ammo display
+            document.querySelector('.ammo-max').textContent = `/${newMax}`;
+        }
+
+        // Close modal
+        document.getElementById('upgrade-modal').style.display = 'none';
+
+        // Clear the countdown interval if still running
+        if (this.countdownInterval) {
+            clearInterval(this.countdownInterval);
+            this.countdownInterval = null;
+        }
+
+        // Continue countdown without modal, but end it early
+        // Let countdown run for remaining time in background so players can still answer questions
+    }
+
+    startCountdown(seconds) {
+        this.countdownTime = seconds;
+        const countdownDisplay = document.getElementById('countdown-seconds');
+        countdownDisplay.textContent = this.countdownTime;
+
+        // Update countdown every second
+        const countdownInterval = setInterval(() => {
+            this.countdownTime--;
+            countdownDisplay.textContent = this.countdownTime;
+
+            if (this.countdownTime <= 0) {
+                clearInterval(countdownInterval);
+                this.endCountdown();
+            }
+        }, 1000);
+
+        // Store interval so we can clear it if upgrade selected early
+        this.countdownInterval = countdownInterval;
+    }
+
+    endCountdown() {
+        // Close modal if still open
+        document.getElementById('upgrade-modal').style.display = 'none';
+
+        // End countdown state
+        this.isInCountdown = false;
+
+        // Apply starting ammo bonus
+        const startingAmmoBonus = UPGRADES.startingAmmo.getBonus(this.myUpgrades.startingAmmo);
+        if (startingAmmoBonus > 0) {
+            this.addAmmo(startingAmmoBonus);
+        }
+
+        console.log('Wave starting! Prep time over.');
+    }
+
     generateNewQuestion() {
         this.currentQuestion = generateQuestion(this.difficulty);
         document.getElementById('question-text').textContent = this.currentQuestion.question;
@@ -389,13 +725,18 @@ export default class GameScene extends Phaser.Scene {
     checkAnswer(answer) {
         const feedbackText = document.getElementById('feedback-text');
         const isCorrect = answer === this.currentQuestion.answer;
-        
+
         if (isCorrect) {
-            feedbackText.textContent = '✓ Correct! +' + AMMO_PER_QUESTION + ' Ammo';
+            // Calculate ammo gain with bonus ammo upgrade
+            const baseAmmo = AMMO_PER_QUESTION;
+            const bonusAmmo = UPGRADES.bonusAmmo.getBonus(this.myUpgrades.bonusAmmo);
+            const totalAmmo = baseAmmo + bonusAmmo;
+
+            feedbackText.textContent = `✓ Correct! +${totalAmmo} Ammo`;
             feedbackText.className = 'feedback-correct';
-            
+
             // Add ammo
-            this.addAmmo(AMMO_PER_QUESTION);
+            this.addAmmo(totalAmmo);
             this.questionsAnswered++;
             
             // Update stats
@@ -418,7 +759,8 @@ export default class GameScene extends Phaser.Scene {
 
     addAmmo(amount) {
         const oldAmmo = this.ammo;
-        this.ammo = Math.min(this.ammo + amount, MAX_AMMO);
+        const maxAmmo = UPGRADES.maxAmmo.getBonus(this.myUpgrades.maxAmmo);
+        this.ammo = Math.min(this.ammo + amount, maxAmmo);
         
         if (this.ammo > oldAmmo) {
             this.updateAmmoDisplay();
@@ -488,18 +830,19 @@ export default class GameScene extends Phaser.Scene {
 
     update(time, delta) {
         if (this.isPaused) return;
-        
-        // Only host spawns monsters
-        if (this.isHost && time > this.lastSpawnTime + this.spawnInterval) {
+
+        // Only host spawns monsters (pause during countdown)
+        if (this.isHost && !this.isInCountdown && time > this.lastSpawnTime + this.spawnInterval) {
             // Check if we should spawn boss (end of wave)
             if (this.monstersThisWave >= this.monstersPerWave && !this.bossActive) {
                 this.spawnBoss();
                 this.bossActive = true;
                 this.lastSpawnTime = time;
             } else if (!this.bossActive) {
-                // Spawn multiple monsters based on player count (2 per player)
+                // Spawn monsters (1-2 per interval depending on player count)
                 const playerCount = this.multiplayer.players.length;
-                const spawnsPerInterval = 2 * playerCount;
+                // Spawn 1 UFO normally, +1 more for every 2 players
+                const spawnsPerInterval = 1 + Math.floor(playerCount / 2);
 
                 for (let i = 0; i < spawnsPerInterval; i++) {
                     this.spawnNormalMonster();
@@ -511,7 +854,31 @@ export default class GameScene extends Phaser.Scene {
         // Move monsters
         this.monsterGroup.getChildren().forEach(monster => {
             if (!monster.active) return;
-            
+
+            // Check and update status effects
+            const currentTime = Date.now();
+            const freezeEnd = monster.getData('freezeEnd') || 0;
+            const slowEnd = monster.getData('slowEnd') || 0;
+            const isBoss = monster.getData('isBoss');
+
+            if (currentTime < freezeEnd) {
+                // Still frozen
+                monster.setData('speedMultiplier', 0);
+                monster.setTint(0x00ffff);
+            } else if (currentTime < slowEnd) {
+                // Freeze expired, but still slowed
+                monster.setData('speedMultiplier', 0.5);
+                monster.setTint(0x9b59b6);
+            } else {
+                // All effects expired
+                monster.setData('speedMultiplier', 1);
+                if (isBoss) {
+                    monster.setTint(0xff6b6b);
+                } else {
+                    monster.clearTint();
+                }
+            }
+
             // Apply speed with status effects
             const speed = monster.getData('speed') * monster.getData('speedMultiplier');
             monster.y += (speed * delta) / 1000;
@@ -719,12 +1086,34 @@ export default class GameScene extends Phaser.Scene {
             return;
         }
         
-        // Spend ammo
-        this.ammo -= weapon.cost;
-        this.updateAmmoDisplay();
+        // Check for efficient shooter (free shot chance)
+        const efficientChance = UPGRADES.efficientShooter.getBonus(this.myUpgrades.efficientShooter);
+        const isFreeShot = Math.random() * 100 < efficientChance;
+
+        if (!isFreeShot) {
+            // Spend ammo
+            this.ammo -= weapon.cost;
+            this.updateAmmoDisplay();
+        } else {
+            // Show free shot indicator
+            const freeText = this.add.text(monster.x, 720 - 120, 'FREE SHOT!', {
+                fontSize: '16px',
+                color: '#2ecc71',
+                fontWeight: 'bold'
+            }).setOrigin(0.5);
+
+            this.tweens.add({
+                targets: freeText,
+                y: freeText.y - 30,
+                alpha: 0,
+                duration: 1000,
+                onComplete: () => freeText.destroy()
+            });
+        }
+
         this.totalShots++;
         this.updateMyStats();
-        
+
         // Fire projectile
         this.fireProjectile(monster, weapon);
     }
@@ -803,12 +1192,47 @@ export default class GameScene extends Phaser.Scene {
 
     applyDamage(monster, weapon) {
         if (!monster || !monster.active) return;
-        
+
+        const isBoss = monster.getData('isBoss');
+
+        // Calculate base damage with upgrades
+        let baseDamage = weapon.damage;
+
+        // Apply damage boost upgrade
+        const damageBoost = UPGRADES.damage.getBonus(this.myUpgrades.damage);
+        baseDamage += damageBoost;
+
+        // Apply boss killer upgrade (only if boss)
+        if (isBoss) {
+            const bossKillerBonus = UPGRADES.bossKiller.getBonus(this.myUpgrades.bossKiller);
+            baseDamage = baseDamage * (1 + bossKillerBonus / 100);
+        }
+
+        // Check for critical hit
+        let finalDamage = baseDamage;
+        let isCritical = false;
+        if (this.myUpgrades.critical > 0) {
+            const critData = UPGRADES.critical.getBonus(this.myUpgrades.critical);
+            if (Math.random() * 100 < critData.chance) {
+                finalDamage = baseDamage * critData.multiplier;
+                isCritical = true;
+            }
+        }
+
+        // Check for executioner (instant kill at low HP)
+        const executionerThreshold = UPGRADES.executioner.getBonus(this.myUpgrades.executioner);
+        const healthPercent = (monster.getData('health') / monster.getData('maxHealth')) * 100;
+        const isExecuted = healthPercent <= executionerThreshold;
+
         // Apply damage
         let health = monster.getData('health');
-        health -= weapon.damage;
+        if (isExecuted && !isBoss) {
+            health = 0; // Instant kill
+        } else {
+            health -= finalDamage;
+        }
         monster.setData('health', health);
-        
+
         // Sync damage to other players
         const monsterId = monster.getData('id');
         this.multiplayer.emitMonsterDamaged({
@@ -816,7 +1240,7 @@ export default class GameScene extends Phaser.Scene {
             newHealth: health,
             weaponType: this.selectedWeapon
         });
-        
+
         // Flash effect
         this.tweens.add({
             targets: monster,
@@ -825,33 +1249,65 @@ export default class GameScene extends Phaser.Scene {
             yoyo: true,
             repeat: 2
         });
-        
-        // Apply freeze effect if freeze weapon
-        if (weapon.freeze && monster.getData('speedMultiplier') === 1) {
-            monster.setData('speedMultiplier', 0.3);
-            monster.setTint(0x9b59b6); // Purple for freeze
-            
-            // Remove freeze after 4 seconds
-            this.time.delayedCall(4000, () => {
-                if (monster.active) {
-                    monster.setData('speedMultiplier', 1);
-                    const isBoss = monster.getData('isBoss');
-                    if (isBoss) {
-                        monster.setTint(0xff6b6b); // Back to red for boss
-                    } else {
-                        monster.clearTint();
-                    }
-                }
-            });
+
+        // Apply slow/freeze effects (not on bosses)
+        if (!isBoss) {
+            // Freeze upgrade
+            if (this.myUpgrades.freeze > 0) {
+                const freezeDuration = UPGRADES.freeze.getBonus(this.myUpgrades.freeze) * 1000;
+                this.applyStatusEffect(monster, 'freeze', freezeDuration);
+            }
+
+            // Slow upgrade
+            if (this.myUpgrades.slow > 0) {
+                const slowDuration = UPGRADES.slow.getBonus(this.myUpgrades.slow) * 1000;
+                this.applyStatusEffect(monster, 'slow', slowDuration);
+            }
+
+            // Weapon freeze (old freeze weapon)
+            if (weapon.freeze) {
+                this.applyStatusEffect(monster, 'freeze', 100); // 0.1s freeze
+            }
         }
-        
+
+        // Apply splash damage to nearby enemies
+        if (this.myUpgrades.splash > 0) {
+            const splashPercent = UPGRADES.splash.getBonus(this.myUpgrades.splash);
+            const splashDamage = finalDamage * (splashPercent / 100);
+            this.applySplashDamage(monster, splashDamage);
+        }
+
+        // Apply pierce damage to enemies behind
+        if (this.myUpgrades.pierce > 0) {
+            const pierceCount = UPGRADES.pierce.getBonus(this.myUpgrades.pierce);
+            this.applyPierceDamage(monster, finalDamage, pierceCount);
+        }
+
         // Show damage number
-        const damageText = this.add.text(monster.x, monster.y, `-${weapon.damage}`, {
-            fontSize: '24px',
-            color: '#e74c3c',
-            fontWeight: 'bold'
+        let damageColor = '#e74c3c';
+        let damageSize = '24px';
+        let damageLabel = `-${Math.round(finalDamage)}`;
+
+        if (isCritical) {
+            damageColor = '#f39c12';
+            damageSize = '32px';
+            damageLabel = `CRIT! -${Math.round(finalDamage)}`;
+        }
+
+        if (isExecuted && !isBoss) {
+            damageColor = '#9b59b6';
+            damageSize = '28px';
+            damageLabel = 'EXECUTED!';
+        }
+
+        const damageText = this.add.text(monster.x, monster.y, damageLabel, {
+            fontSize: damageSize,
+            color: damageColor,
+            fontWeight: 'bold',
+            stroke: '#000000',
+            strokeThickness: 3
         }).setOrigin(0.5);
-        
+
         this.tweens.add({
             targets: damageText,
             y: monster.y - 40,
@@ -859,13 +1315,125 @@ export default class GameScene extends Phaser.Scene {
             duration: 1000,
             onComplete: () => damageText.destroy()
         });
-        
+
         // Update health bar
         this.updateHealthBar(monster);
-        
+
         // Check if dead
         if (health <= 0) {
             this.killMonster(monster);
+        }
+    }
+
+    applyStatusEffect(monster, type, duration) {
+        if (!monster || !monster.active) return;
+
+        const currentTime = Date.now();
+
+        if (type === 'freeze') {
+            // Stack freeze duration
+            const existingFreezeEnd = monster.getData('freezeEnd') || currentTime;
+            const newFreezeEnd = Math.max(currentTime, existingFreezeEnd) + duration;
+            monster.setData('freezeEnd', newFreezeEnd);
+            monster.setData('speedMultiplier', 0); // Completely frozen
+            monster.setTint(0x00ffff); // Cyan for freeze
+        } else if (type === 'slow') {
+            // Stack slow duration
+            const existingSlowEnd = monster.getData('slowEnd') || currentTime;
+            const newSlowEnd = Math.max(currentTime, existingSlowEnd) + duration;
+            monster.setData('slowEnd', newSlowEnd);
+            // Don't change speed here, will be handled in update
+            if (monster.getData('speedMultiplier') !== 0) {
+                monster.setData('speedMultiplier', 0.5); // 50% slow
+                monster.setTint(0x9b59b6); // Purple for slow
+            }
+        }
+    }
+
+    applySplashDamage(centerMonster, splashDamage) {
+        const splashRadius = 100;
+        this.monsters.forEach(monster => {
+            if (!monster.active || monster === centerMonster) return;
+
+            const distance = Phaser.Math.Distance.Between(
+                centerMonster.x, centerMonster.y,
+                monster.x, monster.y
+            );
+
+            if (distance <= splashRadius) {
+                let health = monster.getData('health');
+                health -= splashDamage;
+                monster.setData('health', health);
+
+                // Show splash damage
+                const splashText = this.add.text(monster.x, monster.y, `-${Math.round(splashDamage)}`, {
+                    fontSize: '18px',
+                    color: '#e67e22',
+                    fontWeight: 'bold'
+                }).setOrigin(0.5);
+
+                this.tweens.add({
+                    targets: splashText,
+                    y: splashText.y - 30,
+                    alpha: 0,
+                    duration: 800,
+                    onComplete: () => splashText.destroy()
+                });
+
+                this.updateHealthBar(monster);
+
+                if (health <= 0) {
+                    this.killMonster(monster);
+                }
+            }
+        });
+    }
+
+    applyPierceDamage(hitMonster, pierceDamage, pierceCount) {
+        const lane = hitMonster.getData('lane');
+
+        // Find all monsters in the same lane behind the hit monster
+        const monstersInLane = [];
+        this.monsters.forEach(monster => {
+            if (monster.active && monster !== hitMonster && monster.getData('lane') === lane) {
+                if (monster.y < hitMonster.y) { // Behind (higher on screen)
+                    monstersInLane.push(monster);
+                }
+            }
+        });
+
+        // Sort by y position (closest first)
+        monstersInLane.sort((a, b) => b.y - a.y);
+
+        // Pierce through up to pierceCount enemies (or all if level 3)
+        const targetCount = pierceCount >= 3 ? monstersInLane.length : Math.min(pierceCount, monstersInLane.length);
+
+        for (let i = 0; i < targetCount; i++) {
+            const monster = monstersInLane[i];
+            let health = monster.getData('health');
+            health -= pierceDamage;
+            monster.setData('health', health);
+
+            // Show pierce damage
+            const pierceText = this.add.text(monster.x, monster.y, `-${Math.round(pierceDamage)}`, {
+                fontSize: '20px',
+                color: '#3498db',
+                fontWeight: 'bold'
+            }).setOrigin(0.5);
+
+            this.tweens.add({
+                targets: pierceText,
+                y: pierceText.y - 35,
+                alpha: 0,
+                duration: 900,
+                onComplete: () => pierceText.destroy()
+            });
+
+            this.updateHealthBar(monster);
+
+            if (health <= 0) {
+                this.killMonster(monster);
+            }
         }
     }
 
@@ -899,7 +1467,61 @@ export default class GameScene extends Phaser.Scene {
         this.score += scoreGain;
         this.scoreText.setText(`Team Score: ${this.score}`);
         this.monstersKilled++;
-        
+        this.killsSinceLastHeal++;
+
+        // Apply scavenger upgrade (chance for ammo on kill)
+        if (this.myUpgrades.scavenger > 0) {
+            const scavengerChance = UPGRADES.scavenger.getBonus(this.myUpgrades.scavenger);
+            if (Math.random() * 100 < scavengerChance) {
+                this.addAmmo(1);
+                // Show scavenger proc
+                const scavText = this.add.text(monster.x, monster.y + 20, '+1 AMMO', {
+                    fontSize: '14px',
+                    color: '#2ecc71',
+                    fontWeight: 'bold'
+                }).setOrigin(0.5);
+
+                this.tweens.add({
+                    targets: scavText,
+                    y: scavText.y - 25,
+                    alpha: 0,
+                    duration: 800,
+                    onComplete: () => scavText.destroy()
+                });
+            }
+        }
+
+        // Apply life steal upgrade (heal base every X kills)
+        if (this.myUpgrades.lifeSteal > 0) {
+            const killsNeeded = UPGRADES.lifeSteal.getBonus(this.myUpgrades.lifeSteal);
+            if (this.killsSinceLastHeal >= killsNeeded) {
+                this.killsSinceLastHeal = 0;
+                const maxHealth = BASE_HEALTH + UPGRADES.baseHealth.getBonus(this.myUpgrades.baseHealth);
+                if (this.baseHealth < maxHealth) {
+                    this.baseHealth = Math.min(this.baseHealth + 1, maxHealth);
+                    this.healthText.setText(`Base: ${this.baseHealth}`);
+                    this.applyBaseDamageEffects();
+
+                    // Show heal text
+                    const healText = this.add.text(1280 / 2, 720 - 150, '+1 HP', {
+                        fontSize: '24px',
+                        color: '#2ecc71',
+                        fontWeight: 'bold',
+                        stroke: '#000000',
+                        strokeThickness: 3
+                    }).setOrigin(0.5);
+
+                    this.tweens.add({
+                        targets: healText,
+                        y: healText.y - 40,
+                        alpha: 0,
+                        duration: 1500,
+                        onComplete: () => healText.destroy()
+                    });
+                }
+            }
+        }
+
         // Track wave progress
         if (isBoss) {
             // Boss killed! Start next wave
@@ -911,9 +1533,8 @@ export default class GameScene extends Phaser.Scene {
             // Make it harder - scale with player count
             const playerCount = this.multiplayer.players.length;
             this.spawnInterval = Math.max(300, this.spawnInterval - 50);
-            // Base monsters per wave: 2 per player, plus extra based on difficulty
-            const difficultyBonus = Math.floor(this.difficulty / 3);
-            this.monstersPerWave = (2 * playerCount) + (difficultyBonus * playerCount);
+            // Increase monsters per wave by 10% each wave (rounded up)
+            this.monstersPerWave = Math.ceil(this.monstersPerWave * 1.10);
             
             // Sync wave change to other players
             this.multiplayer.socket.emit('wave-completed', {
@@ -921,6 +1542,11 @@ export default class GameScene extends Phaser.Scene {
                 newWave: this.difficulty,
                 newSpawnInterval: this.spawnInterval,
                 newMonstersPerWave: this.monstersPerWave
+            });
+
+            // Show upgrade modal (slight delay for dramatic effect)
+            this.time.delayedCall(1500, () => {
+                this.showUpgradeModal();
             });
         } else {
             // Normal monster killed

@@ -498,3 +498,133 @@ body {
 .team-player-score {
     color: #f39c12;
 }
+
+/* === UPGRADE MODAL === */
+#upgrade-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.85);
+    z-index: 2000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.upgrade-modal-content {
+    background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+    border: 3px solid #3498db;
+    border-radius: 20px;
+    padding: 40px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+    text-align: center;
+    max-width: 900px;
+}
+
+#upgrade-modal-title {
+    color: white;
+    font-size: 36px;
+    margin: 0 0 15px 0;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+#countdown-timer {
+    color: #f39c12;
+    font-size: 24px;
+    font-weight: bold;
+    margin-bottom: 10px;
+    text-shadow: 0 0 10px rgba(243, 156, 18, 0.5);
+}
+
+.upgrade-hint {
+    color: #95a5a6;
+    font-size: 16px;
+    margin-bottom: 25px;
+    font-style: italic;
+}
+
+.upgrade-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+    margin-top: 20px;
+}
+
+.upgrade-card {
+    background: rgba(0, 0, 0, 0.3);
+    border: 2px solid #3498db;
+    border-radius: 12px;
+    padding: 20px;
+    cursor: pointer;
+    transition: all 0.3s;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-height: 220px;
+}
+
+.upgrade-card:hover {
+    transform: translateY(-5px);
+    border-color: #f39c12;
+    box-shadow: 0 8px 16px rgba(243, 156, 18, 0.4);
+    background: rgba(243, 156, 18, 0.1);
+}
+
+.upgrade-card.max-level {
+    opacity: 0.5;
+    cursor: not-allowed;
+    border-color: #7f8c8d;
+}
+
+.upgrade-card.max-level:hover {
+    transform: none;
+    border-color: #7f8c8d;
+    box-shadow: none;
+    background: rgba(0, 0, 0, 0.3);
+}
+
+.upgrade-icon {
+    font-size: 48px;
+    margin-bottom: 10px;
+}
+
+.upgrade-name {
+    color: white;
+    font-size: 20px;
+    font-weight: bold;
+    margin-bottom: 8px;
+}
+
+.upgrade-level {
+    color: #f39c12;
+    font-size: 14px;
+    margin-bottom: 10px;
+    font-weight: bold;
+}
+
+.upgrade-description {
+    color: #ecf0f1;
+    font-size: 13px;
+    margin-bottom: 10px;
+    line-height: 1.4;
+}
+
+.upgrade-effect {
+    color: #2ecc71;
+    font-size: 14px;
+    font-weight: bold;
+    margin-top: auto;
+    padding-top: 10px;
+    border-top: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+@keyframes upgradeGlow {
+    0%, 100% { box-shadow: 0 0 10px rgba(52, 152, 219, 0.5); }
+    50% { box-shadow: 0 0 25px rgba(52, 152, 219, 0.8); }
+}
+
+.upgrade-card:hover:not(.max-level) {
+    animation: upgradeGlow 1.5s infinite;
+}
