@@ -1,35 +1,35 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="nn">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Quiz Defense</title>
+    <title>Mattespel</title>
     <link rel="stylesheet" href="/src/style.css">
 </head>
 <body>
     <!-- Lobby Screen -->
     <div id="lobby-screen">
         <div class="lobby-container">
-            <h1>🎮 Quiz Defense</h1>
-            <p class="subtitle">Cooperative Math Defense Game</p>
-            
+            <h1>🎮 Mattespel</h1>
+            <p class="subtitle">Samarbeidsspel i matte</p>
+
             <div class="lobby-options">
                 <div class="lobby-card">
-                    <h2>Create Room</h2>
-                    <input type="text" id="host-name" placeholder="Your name..." maxlength="20">
-                    <button id="create-room-btn" class="lobby-btn primary">Create Room</button>
+                    <h2>Lag rom</h2>
+                    <input type="text" id="host-name" placeholder="Namnet ditt..." maxlength="20">
+                    <button id="create-room-btn" class="lobby-btn primary">Lag rom</button>
                 </div>
-                
-                <div class="lobby-divider">OR</div>
-                
+
+                <div class="lobby-divider">ELLER</div>
+
                 <div class="lobby-card">
-                    <h2>Join Room</h2>
-                    <input type="text" id="join-name" placeholder="Your name..." maxlength="20">
-                    <input type="text" id="room-code-input" placeholder="4-digit code..." maxlength="4" pattern="[0-9]*" inputmode="numeric">
-                    <button id="join-room-btn" class="lobby-btn secondary">Join Room</button>
+                    <h2>Bli med i rom</h2>
+                    <input type="text" id="join-name" placeholder="Namnet ditt..." maxlength="20">
+                    <input type="text" id="room-code-input" placeholder="4-sifra kode..." maxlength="4" pattern="[0-9]*" inputmode="numeric">
+                    <button id="join-room-btn" class="lobby-btn secondary">Bli med</button>
                 </div>
             </div>
-            
+
             <div id="error-message" class="error-message"></div>
         </div>
     </div>
@@ -37,18 +37,18 @@
     <!-- Waiting Room -->
     <div id="waiting-room" style="display: none;">
         <div class="waiting-container">
-            <h1>Room: <span id="display-room-code"></span></h1>
-            <p class="waiting-subtitle">Waiting for players...</p>
-            
+            <h1>Rom: <span id="display-room-code"></span></h1>
+            <p class="waiting-subtitle">Ventar på spelarar...</p>
+
             <div id="players-list" class="players-list"></div>
-            
+
             <div class="waiting-actions">
-                <button id="start-game-btn" class="lobby-btn primary" style="display: none;">Start Game</button>
-                <button id="leave-room-btn" class="lobby-btn secondary">Leave Room</button>
+                <button id="start-game-btn" class="lobby-btn primary" style="display: none;">Start spel</button>
+                <button id="leave-room-btn" class="lobby-btn secondary">Forlat rom</button>
             </div>
-            
+
             <div class="room-info">
-                Share this room code with your classmates!
+                Del denne romkoden med klassekameratane dine!
             </div>
         </div>
     </div>
@@ -58,14 +58,14 @@
 
     <!-- Wave Countdown Display -->
     <div id="wave-countdown-display" style="display: none;">
-        Next wave starts in: <span id="wave-countdown-time">0</span>s
+        Neste bølgje startar om: <span id="wave-countdown-time">0</span>s
     </div>
 
     <!-- Question Panel (Side) -->
     <div id="question-panel" class="panel" style="display: none;">
         <div id="question-header">
             <button class="panel-toggle">▶</button>
-            <h3>Answer for Ammo!</h3>
+            <h3>Svar for ammunisjon!</h3>
             <div id="player-name-display"></div>
             <div id="ammo-display">
                 <span class="ammo-icon">🔫</span>
@@ -73,41 +73,41 @@
                 <span class="ammo-max">/10</span>
             </div>
         </div>
-        
+
         <div id="question-content">
             <div id="question-text"></div>
-            <input id="answer-input" type="text" placeholder="Your answer..." autocomplete="off">
-            <button id="submit-button">Submit Answer</button>
+            <input id="answer-input" type="text" placeholder="Svaret ditt..." autocomplete="off">
+            <button id="submit-button">Send inn svar</button>
             <div id="feedback-text"></div>
         </div>
-        
+
         <div id="next-question-btn-container">
-            <button id="next-question-btn">Get New Question</button>
+            <button id="next-question-btn">Nytt spørsmål</button>
         </div>
     </div>
 
     <!-- Players Stats Panel -->
     <div id="players-stats-panel" class="panel" style="display: none;">
         <button class="panel-toggle">▶</button>
-        <h4>Team Stats</h4>
+        <h4>Lagstatistikk</h4>
         <div id="players-stats-list"></div>
     </div>
 
     <!-- Game Over Modal -->
     <div id="game-over-modal">
-        <h2>GAME OVER</h2>
+        <h2>SPELET ER FERDIG</h2>
         <div id="final-score"></div>
         <div id="final-stats"></div>
         <div id="team-stats"></div>
-        <button id="restart-button">Back to Lobby</button>
+        <button id="restart-button">Tilbake til lobby</button>
     </div>
 
     <!-- Upgrade Selection Modal -->
     <div id="upgrade-modal" style="display: none;">
         <div class="upgrade-modal-content">
-            <h2 id="upgrade-modal-title">Wave Complete! Choose Your Upgrade</h2>
-            <div id="countdown-timer">Prep Time: <span id="countdown-seconds">10</span>s</div>
-            <p class="upgrade-hint">Answer questions to refill ammo during countdown!</p>
+            <h2 id="upgrade-modal-title">Bølgje fullført! Vel oppgradering</h2>
+            <div id="countdown-timer">Førebuingstid: <span id="countdown-seconds">10</span>s</div>
+            <p class="upgrade-hint">Svar på spørsmål for å fylle ammunisjon medan du ventar!</p>
             <div id="upgrade-options" class="upgrade-grid">
                 <!-- Upgrade cards will be inserted here -->
             </div>

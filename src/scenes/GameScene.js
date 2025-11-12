@@ -25,17 +25,17 @@ const WEAPONS = {
 const UPGRADES = {
     damage: {
         id: 'damage',
-        name: 'Damage Boost',
-        description: 'Increase your shot damage',
+        name: 'Skadebonus',
+        description: 'Auk skaden på skota dine',
         icon: '⚡',
         maxLevel: Infinity,
         getBonus: (level) => level * 5,
-        getDescription: (level) => `+${level * 5} damage per shot (Next: +${(level + 1) * 5})`
+        getDescription: (level) => `+${level * 5} skade per skot (Neste: +${(level + 1) * 5})`
     },
     critical: {
         id: 'critical',
-        name: 'Critical Strike',
-        description: 'Chance to deal massive damage',
+        name: 'Kritisk treff',
+        description: 'Sjanse for massiv skade',
         icon: '💥',
         maxLevel: Infinity,
         getBonus: (level) => {
@@ -48,186 +48,186 @@ const UPGRADES = {
             const next = Math.min(10 + ((level + 1) * 5), 50);
             const multCurrent = 2 + (level * 0.25);
             const multNext = 2 + ((level + 1) * 0.25);
-            return `${current}% chance for ${multCurrent.toFixed(1)}x damage (Next: ${next}% for ${multNext.toFixed(1)}x)`;
+            return `${current}% sjanse for ${multCurrent.toFixed(1)}x skade (Neste: ${next}% for ${multNext.toFixed(1)}x)`;
         }
     },
     pierce: {
         id: 'pierce',
-        name: 'Pierce Shot',
-        description: 'Shots hit multiple enemies in a lane',
+        name: 'Gjennomtrengande',
+        description: 'Skot treffer fleire fiendar i ei bane',
         icon: '🎯',
         maxLevel: 3,
         getBonus: (level) => Math.min(level, 3),
         getDescription: (level) => {
-            if (level === 0) return 'Hit +1 enemy behind target (Next: +1 pierce)';
-            if (level === 1) return 'Hit +1 enemy (Next: +2 enemies)';
-            if (level === 2) return 'Hit +2 enemies (Next: All in lane)';
-            return 'Hit ALL enemies in lane (MAX)';
+            if (level === 0) return 'Treff +1 fiende bak målet (Neste: +1 gjennomtrengande)';
+            if (level === 1) return 'Treff +1 fiende (Neste: +2 fiendar)';
+            if (level === 2) return 'Treff +2 fiendar (Neste: Alle i bana)';
+            return 'Treff ALLE fiendar i bana (MAKS)';
         }
     },
     executioner: {
         id: 'executioner',
-        name: 'Executioner',
-        description: 'Instantly kill low-health enemies',
+        name: 'Bøddel',
+        description: 'Drep fiendar med låg helse med ein gong',
         icon: '💀',
         maxLevel: Infinity,
         getBonus: (level) => 20 + (level * 10),
         getDescription: (level) => {
             const current = 20 + (level * 10);
             const next = 20 + ((level + 1) * 10);
-            return `Kill enemies below ${current}% HP (Next: ${next}%)`;
+            return `Drep fiendar under ${current}% HP (Neste: ${next}%)`;
         }
     },
     slow: {
         id: 'slow',
-        name: 'Slow',
-        description: 'Slow down enemies (stacks with team)',
+        name: 'Seinkjing',
+        description: 'Gjer fiendar seinare (stabler med laget)',
         icon: '🐌',
         maxLevel: Infinity,
         getBonus: (level) => level * 0.2,
         getDescription: (level) => {
             const current = (level * 0.2).toFixed(1);
             const next = ((level + 1) * 0.2).toFixed(1);
-            return `50% slow for ${current}s (Next: ${next}s)`;
+            return `50% seinkjing i ${current}s (Neste: ${next}s)`;
         }
     },
     freeze: {
         id: 'freeze',
-        name: 'Freeze',
-        description: 'Completely stop enemies (stacks with team)',
+        name: 'Frys',
+        description: 'Stopp fiendar heilt (stabler med laget)',
         icon: '❄️',
         maxLevel: Infinity,
         getBonus: (level) => level * 0.1,
         getDescription: (level) => {
             const current = (level * 0.1).toFixed(1);
             const next = ((level + 1) * 0.1).toFixed(1);
-            return `100% stop for ${current}s (Next: ${next}s)`;
+            return `100% stopp i ${current}s (Neste: ${next}s)`;
         }
     },
     splash: {
         id: 'splash',
-        name: 'Splash Damage',
-        description: 'Damage enemies near your target',
+        name: 'Spreieskade',
+        description: 'Skad fiendar nær målet ditt',
         icon: '💢',
         maxLevel: Infinity,
         getBonus: (level) => Math.min(25 + (level * 25), 100),
         getDescription: (level) => {
             const current = Math.min(25 + (level * 25), 100);
             const next = Math.min(25 + ((level + 1) * 25), 100);
-            return `${current}% damage to nearby enemies (Next: ${next}%)`;
+            return `${current}% skade til nærliggjande fiendar (Neste: ${next}%)`;
         }
     },
     maxAmmo: {
         id: 'maxAmmo',
-        name: 'Max Ammo',
-        description: 'Increase ammo capacity',
+        name: 'Maks ammunisjon',
+        description: 'Auk ammunisjonskapasitet',
         icon: '📦',
         maxLevel: Infinity,
         getBonus: (level) => 5 + (level * 3),
         getDescription: (level) => {
             const current = 5 + (level * 3);
             const next = 5 + ((level + 1) * 3);
-            return `Max ammo: ${current} (Next: ${next})`;
+            return `Maks ammunisjon: ${current} (Neste: ${next})`;
         }
     },
     bonusAmmo: {
         id: 'bonusAmmo',
-        name: 'Bonus Ammo',
-        description: 'Extra ammo per correct answer',
+        name: 'Bonusammunisjon',
+        description: 'Ekstra ammunisjon per rett svar',
         icon: '🎁',
         maxLevel: Infinity,
         getBonus: (level) => level,
-        getDescription: (level) => `+${2 + level} ammo per answer (Next: +${2 + level + 1})`
+        getDescription: (level) => `+${2 + level} ammunisjon per svar (Neste: +${2 + level + 1})`
     },
     efficientShooter: {
         id: 'efficientShooter',
-        name: 'Efficient Shooter',
-        description: 'Chance for free shots',
+        name: 'Effektiv skytar',
+        description: 'Sjanse for gratis skot',
         icon: '♻️',
         maxLevel: Infinity,
         getBonus: (level) => Math.min(level * 5, 50),
         getDescription: (level) => {
             const current = Math.min(level * 5, 50);
             const next = Math.min((level + 1) * 5, 50);
-            return `${current}% free shots (Next: ${next}%)`;
+            return `${current}% gratis skot (Neste: ${next}%)`;
         }
     },
     startingAmmo: {
         id: 'startingAmmo',
-        name: 'Starting Ammo',
-        description: 'Begin waves with bonus ammo',
+        name: 'Startammunisjon',
+        description: 'Begynn bølgjer med bonusammunisjon',
         icon: '🚀',
         maxLevel: Infinity,
         getBonus: (level) => level * 3,
         getDescription: (level) => {
             const current = level * 3;
             const next = (level + 1) * 3;
-            return `Start with +${current} ammo (Next: +${next})`;
+            return `Start med +${current} ammunisjon (Neste: +${next})`;
         }
     },
     scavenger: {
         id: 'scavenger',
-        name: 'Ammo Scavenger',
-        description: 'Chance to gain ammo on kill',
+        name: 'Ammunisjonssankar',
+        description: 'Sjanse for ammunisjon ved drap',
         icon: '🔍',
         maxLevel: Infinity,
         getBonus: (level) => Math.min(10 + (level * 5), 50),
         getDescription: (level) => {
             const current = Math.min(10 + (level * 5), 50);
             const next = Math.min(10 + ((level + 1) * 5), 50);
-            return `${current}% chance for +1 ammo on kill (Next: ${next}%)`;
+            return `${current}% sjanse for +1 ammunisjon ved drap (Neste: ${next}%)`;
         }
     },
     baseHealth: {
         id: 'baseHealth',
-        name: 'Base Health',
-        description: 'Increase base maximum health',
+        name: 'Basehelse',
+        description: 'Auk maksimal helse til basen',
         icon: '💚',
         maxLevel: Infinity,
         getBonus: (level) => 2 + (level * 2),
         getDescription: (level) => {
             const current = BASE_HEALTH + (2 + (level * 2));
             const next = BASE_HEALTH + (2 + ((level + 1) * 2));
-            return `Base HP: ${current} (Next: ${next})`;
+            return `Base HP: ${current} (Neste: ${next})`;
         }
     },
     lifeSteal: {
         id: 'lifeSteal',
-        name: 'Life Steal',
-        description: 'Heal base on kills',
+        name: 'Livstjuveri',
+        description: 'Lækje basen ved drap',
         icon: '💖',
         maxLevel: 4,
         getBonus: (level) => Math.max(5 - level, 2),
         getDescription: (level) => {
             const current = Math.max(5 - level, 2);
             const next = Math.max(5 - level - 1, 2);
-            return `Heal 1 HP per ${current} kills (Next: per ${next} kills)`;
+            return `Lækje 1 HP per ${current} drap (Neste: per ${next} drap)`;
         }
     },
     bossKiller: {
         id: 'bossKiller',
-        name: 'Boss Killer',
-        description: 'Extra damage to bosses',
+        name: 'Bossdrepar',
+        description: 'Ekstra skade mot bossar',
         icon: '👑',
         maxLevel: Infinity,
         getBonus: (level) => 50 + (level * 50),
         getDescription: (level) => {
             const current = 50 + (level * 50);
             const next = 50 + ((level + 1) * 50);
-            return `+${current}% boss damage (Next: +${next}%)`;
+            return `+${current}% bossskade (Neste: +${next}%)`;
         }
     },
     prepTime: {
         id: 'prepTime',
-        name: 'Extended Prep',
-        description: 'More time between waves',
+        name: 'Ekstra førebuing',
+        description: 'Meir tid mellom bølgjer',
         icon: '⏰',
         maxLevel: Infinity,
         getBonus: (level) => 10 + (level * 2),
         getDescription: (level) => {
             const current = 10 + (level * 2);
             const next = 10 + ((level + 1) * 2);
-            return `${current}s prep time (Next: ${next}s)`;
+            return `${current}s førebuingstid (Neste: ${next}s)`;
         }
     }
 };
@@ -237,7 +237,8 @@ const UPGRADES = {
 const QUESTION_TYPES = {
     // Addition crossing over 10 (result between 10-30)
     additionCrossing10: {
-        name: 'Addition Crossing 10',
+        name: 'Addisjon over 10',
+        category: 'addition',
         generate: () => {
             // Pick two numbers that add to between 10-30
             // One number should be less than 10 to ensure crossing
@@ -259,7 +260,8 @@ const QUESTION_TYPES = {
 
     // Subtraction crossing under 20 or 10 (starting 10-30, crossing down)
     subtractionCrossing: {
-        name: 'Subtraction Crossing 10/20',
+        name: 'Subtraksjon over 10/20',
+        category: 'subtraction',
         generate: () => {
             // Start with number between 11-30
             const num1 = Phaser.Math.Between(11, 30);
@@ -285,6 +287,90 @@ const QUESTION_TYPES = {
             }
             // Retry if not valid
             return QUESTION_TYPES.subtractionCrossing.generate();
+        }
+    },
+
+    // Multiplication 1-5 tables
+    multiplication1to5: {
+        name: 'Multiplikasjon 1-5',
+        category: 'multiplication',
+        generate: () => {
+            const num1 = Phaser.Math.Between(1, 5);
+            const num2 = Phaser.Math.Between(1, 10);
+            return {
+                question: `${num1} × ${num2}`,
+                answer: (num1 * num2).toString()
+            };
+        }
+    },
+
+    // Multiplication 6-9 tables
+    multiplication6to9: {
+        name: 'Multiplikasjon 6-9',
+        category: 'multiplication',
+        generate: () => {
+            const num1 = Phaser.Math.Between(6, 9);
+            const num2 = Phaser.Math.Between(1, 10);
+            return {
+                question: `${num1} × ${num2}`,
+                answer: (num1 * num2).toString()
+            };
+        }
+    },
+
+    // Place value - ones place (einarplassen)
+    placeValueOnes: {
+        name: 'Einarplassen',
+        category: 'placeValue',
+        generate: () => {
+            const number = Phaser.Math.Between(10, 9999);
+            const onesDigit = number % 10;
+            return {
+                question: `Kva tal står på einarplassen?\n${number}`,
+                answer: onesDigit.toString()
+            };
+        }
+    },
+
+    // Place value - tens place (tidelsplassen)
+    placeValueTens: {
+        name: 'Tidelsplassen',
+        category: 'placeValue',
+        generate: () => {
+            const number = Phaser.Math.Between(10, 9999);
+            const tensDigit = Math.floor((number / 10) % 10);
+            return {
+                question: `Kva tal står på tidelsplassen?\n${number}`,
+                answer: tensDigit.toString()
+            };
+        }
+    },
+
+    // Place value - hundreds place (hundredelsplassen)
+    placeValueHundreds: {
+        name: 'Hundredelsplassen',
+        category: 'placeValue',
+        generate: () => {
+            const number = Phaser.Math.Between(100, 9999);
+            const hundredsDigit = Math.floor((number / 100) % 10);
+            return {
+                question: `Kva tal står på hundredelsplassen?\n${number}`,
+                answer: hundredsDigit.toString()
+            };
+        }
+    },
+
+    // Place value - thousands place (tusendelsplassen)
+    placeValueThousands: {
+        name: 'Tusendelsplassen',
+        category: 'placeValue',
+        generate: () => {
+            const number = Phaser.Math.Between(1000, 9999);
+            const thousandsDigit = Math.floor(number / 1000);
+            return {
+                question: `Kva tal står på tusendelsplassen?\n${number}`,
+                answer: thousandsDigit.toString()
+            };
         }
     }
 };
