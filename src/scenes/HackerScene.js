@@ -261,6 +261,53 @@ export default class HackerScene extends Phaser.Scene {
             } else {
                 console.warn(`Player ${data.playerId} not found in playerScores map`);
             }
+
+            // If I'm the one who selected password and game is active, start playing
+            if (data.playerId === this.multiplayer.socket.id && this.gameActive && !this.isHost) {
+                console.log('Password selected! You can now play!');
+                // Generate first question if timer has started
+                if (this.timerStarted) {
+                    this.generateNewQuestion();
+                }
+            }
+
+            // Check if all passwords selected (for early start)
+            if (this.isHost) {
+                this.checkIfAllPasswordsSelectedAndStartTimer();
+            }
+        });
+
+        // Listen for password countdown ticks
+        this.multiplayer.socket.on('password-countdown-tick', (data) => {
+            const secondsRemaining = data.secondsRemaining;
+            console.log(`Password countdown: ${secondsRemaining} seconds remaining`);
+
+            // Update UI for players without password
+            if (!this.isHost && !this.multiplayer.passwordsSelected.get(this.multiplayer.socket.id)) {
+                // Show countdown in password selection area
+                const passwordHint = document.querySelector('.password-hint');
+                if (passwordHint) {
+                    passwordHint.textContent = `Vel eit passord - du har ${secondsRemaining} sekund${secondsRemaining !== 1 ? 'er' : ''} att! Dette treng du for å forsvare deg mot hack!`;
+                }
+            }
+        });
+
+        // Listen for game timer start
+        this.multiplayer.socket.on('game-timer-started', () => {
+            console.log('Game timer has started!');
+
+            if (!this.isHost) {
+                // If I have a password, start generating questions
+                if (this.multiplayer.passwordsSelected.get(this.multiplayer.socket.id)) {
+                    this.generateNewQuestion();
+                } else {
+                    // Show message that they can still join by selecting password
+                    const feedbackDiv = document.getElementById('hacker-feedback');
+                    if (feedbackDiv) {
+                        feedbackDiv.innerHTML = '<p style="color: #ffff00;">Spelet har starta! Vel eit passord for å bli med!</p>';
+                    }
+                }
+            }
         });
 
         // Listen for score updates
@@ -326,23 +373,51 @@ export default class HackerScene extends Phaser.Scene {
         this.gameDuration = duration * 60 * 1000; // Convert minutes to milliseconds
         this.gameActive = true;
         this.timerStarted = false; // Track if timer has started
+        this.passwordCountdown = 30; // 30 seconds for password selection
 
-        // Show question panel
+        // Show question panel (but disabled until password selected)
         if (!this.isHost) {
             document.getElementById('hacker-question-panel').style.display = 'block';
-            this.generateNewQuestion();
         }
 
-        // For host: Wait for all players to select passwords before starting timer
+        // Start 30-second countdown for password selection
         if (this.isHost) {
-            console.log('Waiting for players to select passwords...');
-            this.checkIfAllPasswordsSelectedAndStartTimer();
+            console.log('Starting 30-second countdown for password selection...');
+            this.startPasswordCountdown();
         } else {
-            // For players: Timer will start after they select password
-            console.log('Select your password to start the game timer!');
+            console.log('You have 30 seconds to select your password!');
         }
 
         console.log(`Game initialized! Duration: ${duration} minutes`);
+    }
+
+    startPasswordCountdown() {
+        // Broadcast initial countdown to all players
+        this.multiplayer.socket.emit('password-countdown-tick', {
+            roomCode: this.multiplayer.roomCode,
+            secondsRemaining: this.passwordCountdown
+        });
+
+        this.passwordCountdownInterval = setInterval(() => {
+            this.passwordCountdown--;
+
+            // Broadcast countdown to all players
+            this.multiplayer.socket.emit('password-countdown-tick', {
+                roomCode: this.multiplayer.roomCode,
+                secondsRemaining: this.passwordCountdown
+            });
+
+            if (this.passwordCountdown <= 0) {
+                clearInterval(this.passwordCountdownInterval);
+                console.log('Password selection time is up! Starting game timer...');
+                this.startTimerNow();
+
+                // Notify all players that game timer has started
+                this.multiplayer.socket.emit('game-timer-started', {
+                    roomCode: this.multiplayer.roomCode
+                });
+            }
+        }, 1000);
     }
 
     checkIfAllPasswordsSelectedAndStartTimer() {
@@ -355,8 +430,19 @@ export default class HackerScene extends Phaser.Scene {
         );
 
         if (allSelected && !this.timerStarted) {
-            console.log('All players selected passwords! Starting timer...');
+            console.log('All players selected passwords early! Starting timer...');
+
+            // Clear password countdown
+            if (this.passwordCountdownInterval) {
+                clearInterval(this.passwordCountdownInterval);
+            }
+
             this.startTimerNow();
+
+            // Notify all players that game timer has started
+            this.multiplayer.socket.emit('game-timer-started', {
+                roomCode: this.multiplayer.roomCode
+            });
         }
     }
 
@@ -397,6 +483,12 @@ export default class HackerScene extends Phaser.Scene {
 
     generateNewQuestion() {
         if (!this.gameActive) return;
+
+        // Don't generate questions if player hasn't selected password yet
+        if (!this.isHost && !this.multiplayer.passwordsSelected.get(this.multiplayer.socket.id)) {
+            console.log('Cannot generate question - no password selected yet');
+            return;
+        }
 
         // Use selected question types or all types
         const allowedTypes = this.multiplayer.selectedQuestionTypes;

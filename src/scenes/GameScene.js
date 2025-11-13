@@ -1135,26 +1135,42 @@ export default class GameScene extends Phaser.Scene {
     }
 
     startCountdown(seconds) {
+        // Clear any existing countdown first
+        if (this.countdownInterval) {
+            clearInterval(this.countdownInterval);
+            this.countdownInterval = null;
+        }
+
         this.countdownTime = seconds;
+        this.countdownStartTime = Date.now(); // Store start time for accurate tracking
         const countdownDisplay = document.getElementById('countdown-seconds');
         const waveCountdownTime = document.getElementById('wave-countdown-time');
         countdownDisplay.textContent = this.countdownTime;
         waveCountdownTime.textContent = this.countdownTime;
 
-        // Update countdown every second
-        const countdownInterval = setInterval(() => {
-            this.countdownTime--;
-            countdownDisplay.textContent = this.countdownTime;
-            waveCountdownTime.textContent = this.countdownTime;
+        // Update countdown every second using requestAnimationFrame for accuracy
+        const updateCountdown = () => {
+            const elapsed = Math.floor((Date.now() - this.countdownStartTime) / 1000);
+            const remaining = Math.max(0, seconds - elapsed);
 
-            if (this.countdownTime <= 0) {
-                clearInterval(countdownInterval);
-                this.endCountdown();
+            if (remaining !== this.countdownTime) {
+                this.countdownTime = remaining;
+                countdownDisplay.textContent = this.countdownTime;
+                waveCountdownTime.textContent = this.countdownTime;
+
+                if (this.countdownTime <= 0) {
+                    if (this.countdownInterval) {
+                        clearInterval(this.countdownInterval);
+                        this.countdownInterval = null;
+                    }
+                    this.endCountdown();
+                    return;
+                }
             }
-        }, 1000);
+        };
 
-        // Store interval so we can clear it if upgrade selected early
-        this.countdownInterval = countdownInterval;
+        // Update every 100ms to check for second changes (more accurate than setInterval at 1000ms)
+        this.countdownInterval = setInterval(updateCountdown, 100);
     }
 
     endCountdown() {

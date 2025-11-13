@@ -243,6 +243,26 @@ io.on('connection', (socket) => {
         }
     });
 
+    // Hacker game: Password countdown tick
+    socket.on('password-countdown-tick', (data) => {
+        const roomCode = data.roomCode;
+        if (roomCode) {
+            // Broadcast to all players
+            io.to(roomCode).emit('password-countdown-tick', {
+                secondsRemaining: data.secondsRemaining
+            });
+        }
+    });
+
+    // Hacker game: Game timer started
+    socket.on('game-timer-started', (data) => {
+        const roomCode = data.roomCode;
+        if (roomCode) {
+            // Broadcast to all players
+            io.to(roomCode).emit('game-timer-started');
+        }
+    });
+
     // Hacker game: Hack attempt
     socket.on('hack-attempt', (data) => {
         const { roomCode, targetId, hackerId, hackerName, password } = data;
