@@ -276,11 +276,11 @@ export default class HackerScene extends Phaser.Scene {
     setupSocketListeners() {
         // Listen for room updates (new players joining)
         this.multiplayer.socket.on('room-updated', (room) => {
-            console.log('Room updated, checking for new players');
+            console.log('[ROOM-UPDATED] Checking for new players');
             // Add any new players to playerScores map
             room.players.forEach(player => {
                 if (!this.playerScores.has(player.id)) {
-                    console.log(`Adding new player to scores: ${player.name}`);
+                    console.log(`[ROOM-UPDATED] Adding new player to scores: ${player.name}`);
                     this.playerScores.set(player.id, {
                         name: player.name,
                         score: 0,
@@ -290,6 +290,21 @@ export default class HackerScene extends Phaser.Scene {
                     });
                 }
             });
+        });
+
+        // Listen for late joiners connecting (so we can notify them if timer started)
+        this.multiplayer.socket.on('late-joiner-connected', (data) => {
+            console.log(`[LATE-JOINER] ${data.playerName} joined mid-game`);
+
+            // If timer has already started, notify the late joiner
+            if (this.timerStarted && this.isHost) {
+                console.log('[LATE-JOINER] Timer already started - notifying late joiner');
+                // Send game-timer-started event directly to the late joiner
+                this.multiplayer.socket.emit('notify-late-joiner-timer-started', {
+                    roomCode: this.multiplayer.roomCode,
+                    lateJoinerId: data.playerId
+                });
+            }
         });
 
         // Listen for password selection from players
@@ -480,32 +495,43 @@ export default class HackerScene extends Phaser.Scene {
     }
 
     startPasswordCountdown() {
+        // Store start time for accurate countdown
+        this.passwordCountdownStartTime = Date.now();
+        const totalSeconds = 30;
+
         // Broadcast initial countdown to all players
         this.multiplayer.socket.emit('password-countdown-tick', {
             roomCode: this.multiplayer.roomCode,
-            secondsRemaining: this.passwordCountdown
+            secondsRemaining: totalSeconds
         });
 
+        // Check countdown every 100ms for accuracy
         this.passwordCountdownInterval = setInterval(() => {
-            this.passwordCountdown--;
+            const elapsed = Math.floor((Date.now() - this.passwordCountdownStartTime) / 1000);
+            const remaining = Math.max(0, totalSeconds - elapsed);
 
-            // Broadcast countdown to all players
-            this.multiplayer.socket.emit('password-countdown-tick', {
-                roomCode: this.multiplayer.roomCode,
-                secondsRemaining: this.passwordCountdown
-            });
+            // Only broadcast if the second changed
+            if (remaining !== this.passwordCountdown) {
+                this.passwordCountdown = remaining;
 
-            if (this.passwordCountdown <= 0) {
-                clearInterval(this.passwordCountdownInterval);
-                console.log('Password selection time is up! Starting game timer...');
-                this.startTimerNow();
-
-                // Notify all players that game timer has started
-                this.multiplayer.socket.emit('game-timer-started', {
-                    roomCode: this.multiplayer.roomCode
+                // Broadcast countdown to all players
+                this.multiplayer.socket.emit('password-countdown-tick', {
+                    roomCode: this.multiplayer.roomCode,
+                    secondsRemaining: this.passwordCountdown
                 });
+
+                if (this.passwordCountdown <= 0) {
+                    clearInterval(this.passwordCountdownInterval);
+                    console.log('Password selection time is up! Starting game timer...');
+                    this.startTimerNow();
+
+                    // Notify all players that game timer has started
+                    this.multiplayer.socket.emit('game-timer-started', {
+                        roomCode: this.multiplayer.roomCode
+                    });
+                }
             }
-        }, 1000);
+        }, 100);
     }
 
     checkIfAllPasswordsSelectedAndStartTimer() {
@@ -785,12 +811,20 @@ export default class HackerScene extends Phaser.Scene {
 
         // Get target's password and 2 random others
         const targetPassword = targetData.password;
+        console.log(`[HACK] Target: ${targetData.name}, ID: ${targetId}`);
+        console.log(`[HACK] Target password in playerScores:`, targetPassword);
+        console.log(`[HACK] All playerScores:`, Array.from(this.playerScores.entries()).map(([id, data]) => ({
+            id, name: data.name, hasPassword: !!data.password
+        })));
+
         if (!targetPassword) {
-            console.warn('Target has no password yet - cannot hack!');
+            console.warn(`[HACK] ✗ Target ${targetData.name} has no password yet - cannot hack!`);
             this.showRewardModal('HACK FAILED', `${targetData.name} hasn't set password yet!`, '#ff0000');
             setTimeout(() => this.generateNewQuestion(), 2000);
             return;
         }
+
+        console.log('[HACK] ✓ Target has password - showing hack modal');
 
         const otherPasswords = PASSWORD_POOL.filter(p => p !== targetPassword);
         const randomPasswords = Phaser.Utils.Array.Shuffle([...otherPasswords]).slice(0, 2);

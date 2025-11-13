@@ -74,11 +74,19 @@ io.on('connection', (socket) => {
             return;
         }
 
+        console.log(`[JOIN-ROOM] Player ${playerName} trying to join room ${roomCode}`);
+        console.log(`[JOIN-ROOM] Room gameMode: "${room.gameMode}"`);
+        console.log(`[JOIN-ROOM] Room gameStarted: ${room.gameStarted}`);
+
         // For Hacker mode, allow joining even if game has started (late joining)
         if (room.gameStarted && room.gameMode !== 'the-hacker') {
+            console.log(`[JOIN-ROOM] BLOCKED - Game already started (mode: ${room.gameMode})`);
             socket.emit('room-error', 'Game already started');
             return;
         }
+
+        console.log(`[JOIN-ROOM] ALLOWED - Late joining permitted for Hacker mode`);
+
 
         // Add player to room
         room.players.push({
@@ -99,6 +107,11 @@ io.on('connection', (socket) => {
         // If game already started (Hacker mode late join), immediately notify this player
         if (room.gameStarted && room.gameMode === 'the-hacker') {
             console.log(`Late joiner ${playerName} - sending game-starting event`);
+            // Also notify existing players that someone joined late
+            socket.to(roomCode).emit('late-joiner-connected', {
+                playerId: socket.id,
+                playerName: playerName
+            });
             socket.emit('game-starting', { gameMode: room.gameMode, lateJoin: true });
         }
     });
@@ -272,6 +285,16 @@ io.on('connection', (socket) => {
         if (roomCode) {
             // Broadcast to all players
             io.to(roomCode).emit('game-timer-started');
+        }
+    });
+
+    // Hacker game: Notify late joiner that timer has started
+    socket.on('notify-late-joiner-timer-started', (data) => {
+        const { roomCode, lateJoinerId } = data;
+        if (roomCode && lateJoinerId) {
+            console.log(`[SERVER] Notifying late joiner ${lateJoinerId} that timer has started`);
+            // Send game-timer-started event only to the late joiner
+            io.to(lateJoinerId).emit('game-timer-started');
         }
     });
 

@@ -2120,8 +2120,24 @@ export default class GameScene extends Phaser.Scene {
         } else {
             // Normal monster killed
             this.monstersThisWave++;
+
+            // Check if we should spawn boss immediately (don't wait for spawn interval)
+            if (this.isHost && !this.bossActive && !this.isInCountdown) {
+                const allMonstersSpawned = this.monstersSpawnedThisWave >= this.monstersPerWave;
+                const allMonstersKilled = this.monstersThisWave >= this.monstersPerWave;
+                const noMonstersAlive = this.monsterGroup.countActive(true) === 0;
+
+                // BACKUP: If all monsters spawned and none alive, spawn boss regardless of kill count
+                const backupCondition = allMonstersSpawned && noMonstersAlive;
+
+                if ((allMonstersSpawned && allMonstersKilled && noMonstersAlive) || backupCondition) {
+                    console.log('✅ IMMEDIATE BOSS SPAWN after last monster killed!');
+                    this.spawnBoss();
+                    this.bossActive = true;
+                }
+            }
         }
-        
+
         this.updateMyStats();
         
         // Show score gain

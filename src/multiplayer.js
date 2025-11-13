@@ -257,19 +257,14 @@ class MultiplayerManager {
     createRoom(playerName) {
         this.playerName = playerName;
 
-        // Try to send with game mode, but fall back to just name for compatibility
+        // Send with game mode
         const roomData = {
             playerName: playerName,
             gameMode: this.gameMode || 'quiz-defense'
         };
 
-        // Try the new format first
+        console.log('[CREATE-ROOM] Creating room with gameMode:', this.gameMode);
         this.socket.emit('create-room', roomData);
-
-        // Also try the old format for backwards compatibility
-        setTimeout(() => {
-            this.socket.emit('create-room', playerName);
-        }, 100);
     }
 
     joinRoom(roomCode, playerName) {
@@ -747,7 +742,25 @@ class MultiplayerManager {
     }
 
     setupQuestionTypeSelector() {
+        console.log('[SETUP-QUESTION-SELECTOR] Starting setup');
+        console.log('[SETUP-QUESTION-SELECTOR] QUESTION_TYPES:', QUESTION_TYPES);
+        console.log('[SETUP-QUESTION-SELECTOR] typeof QUESTION_TYPES:', typeof QUESTION_TYPES);
+        console.log('[SETUP-QUESTION-SELECTOR] QUESTION_TYPES keys:', Object.keys(QUESTION_TYPES || {}));
+        console.log('[SETUP-QUESTION-SELECTOR] Number of question types:', Object.keys(QUESTION_TYPES || {}).length);
+
+        if (!QUESTION_TYPES || Object.keys(QUESTION_TYPES).length === 0) {
+            console.error('[SETUP-QUESTION-SELECTOR] ERROR: QUESTION_TYPES is empty or undefined!');
+            alert('ERROR: Question types not loaded. Please refresh the page.');
+            return;
+        }
+
         const container = document.getElementById('question-types-list');
+        if (!container) {
+            console.error('[SETUP-QUESTION-SELECTOR] Container not found!');
+            return;
+        }
+
+        console.log('[SETUP-QUESTION-SELECTOR] Container found, clearing innerHTML');
         container.innerHTML = '';
 
         // Initialize with NO types selected (empty array)
@@ -771,10 +784,14 @@ class MultiplayerManager {
         });
 
         // Create checkbox for each question type
+        console.log('[SETUP-QUESTION-SELECTOR] Starting to create checkboxes...');
+        let checkboxCount = 0;
         Object.entries(QUESTION_TYPES).forEach(([key, typeData]) => {
+            console.log(`[SETUP-QUESTION-SELECTOR] Creating checkbox for: ${key} - ${typeData.name}`);
             const itemDiv = document.createElement('div');
             itemDiv.className = 'question-type-item'; // Start unselected
             itemDiv.dataset.typeKey = key;
+            checkboxCount++;
 
             const checkbox = document.createElement('input');
             checkbox.type = 'checkbox';
@@ -816,7 +833,10 @@ class MultiplayerManager {
             itemDiv.appendChild(checkbox);
             itemDiv.appendChild(label);
             container.appendChild(itemDiv);
+            console.log(`[SETUP-QUESTION-SELECTOR] Appended checkbox ${checkboxCount} to container`);
         });
+
+        console.log(`[SETUP-QUESTION-SELECTOR] Total checkboxes created: ${checkboxCount}`);
 
         // Setup select all / deselect all buttons (clone to remove old listeners)
         const selectAllBtn = document.getElementById('select-all-btn');
