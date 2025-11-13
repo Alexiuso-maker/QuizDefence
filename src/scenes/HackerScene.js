@@ -139,7 +139,8 @@ export default class HackerScene extends Phaser.Scene {
                 name: player.name,
                 score: 0,
                 password: null,
-                hasShield: false
+                hasShield: false,
+                isHost: player.isHost || false
             });
         });
 
@@ -496,9 +497,15 @@ export default class HackerScene extends Phaser.Scene {
     }
 
     showHackModal() {
-        // Get top 5 players
+        // Get top 5 players (exclude self and host)
         const sortedPlayers = Array.from(this.playerScores.entries())
-            .filter(([id, data]) => id !== this.multiplayer.socket.id) // Exclude self
+            .filter(([id, data]) => {
+                // Exclude self
+                if (id === this.multiplayer.socket.id) return false;
+                // Exclude host (host can't be hacked)
+                if (data.isHost) return false;
+                return true;
+            })
             .sort((a, b) => b[1].score - a[1].score)
             .slice(0, 5);
 
@@ -763,7 +770,8 @@ export default class HackerScene extends Phaser.Scene {
             roomCode: this.multiplayer.roomCode,
             playerId: this.multiplayer.socket.id,
             playerName: this.multiplayer.playerName,
-            score: this.score
+            score: this.score,
+            isHost: this.multiplayer.isHost
         });
     }
 
@@ -778,7 +786,8 @@ export default class HackerScene extends Phaser.Scene {
                 name: data.playerName || 'Unknown',
                 score: data.score,
                 password: null,
-                hasShield: false
+                hasShield: false,
+                isHost: data.isHost || false
             });
         }
 

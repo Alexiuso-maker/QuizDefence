@@ -676,7 +676,9 @@ export default class GameScene extends Phaser.Scene {
         this.difficulty = 1;
         this.monstersKilled = 0;
         this.monstersSpawned = 0; // Track total spawned for boss timing
-        this.monstersPerWave = 30 * playerCount; // Start with 30 monsters per player per wave
+        // Scale monsters by 50% per additional player (not 100%)
+        // 1 player = 30, 2 players = 45, 3 players = 60, 4 players = 75
+        this.monstersPerWave = 30 + (30 * 0.5 * (playerCount - 1));
         this.monstersThisWave = 0; // Track kills this wave
         this.monstersSpawnedThisWave = 0; // Track spawns this wave
         this.bossActive = false; // Is boss currently active?
@@ -1275,7 +1277,12 @@ export default class GameScene extends Phaser.Scene {
 
             if (time > this.lastSpawnTime + currentSpawnInterval) {
                 // Check if we should spawn boss (end of wave)
-                if (this.monstersThisWave >= this.monstersPerWave && !this.bossActive) {
+                // Boss spawns when: all monsters spawned, all monsters killed, no monsters alive, boss not active
+                const allMonstersSpawned = this.monstersSpawnedThisWave >= this.monstersPerWave;
+                const allMonstersKilled = this.monstersThisWave >= this.monstersPerWave;
+                const noMonstersAlive = this.monsterGroup.countActive(true) === 0;
+
+                if (allMonstersSpawned && allMonstersKilled && noMonstersAlive && !this.bossActive) {
                     this.spawnBoss();
                     this.bossActive = true;
                     this.lastSpawnTime = time;
@@ -1985,7 +1992,8 @@ export default class GameScene extends Phaser.Scene {
             const playerCount = Math.max(1, this.multiplayer.players.length); // Ensure at least 1 player
             // Increase by 2 monsters per wave: Wave 1=30, Wave 2=32, Wave 3=34, etc.
             const monstersPerPlayer = 30 + (this.difficulty - 1) * 2;
-            this.monstersPerWave = monstersPerPlayer * playerCount;
+            // Scale monsters by 50% per additional player (not 100%)
+            this.monstersPerWave = monstersPerPlayer + (monstersPerPlayer * 0.5 * (playerCount - 1));
 
             // Reduce spawn intervals by 200ms each wave (faster spawning as difficulty increases)
             this.baseSpawnInterval = Math.max(1000 / playerCount, this.baseSpawnInterval - 200);

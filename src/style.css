@@ -435,6 +435,12 @@ body {
     margin-bottom: 30px;
 }
 
+.player-count {
+    color: #3498db;
+    font-weight: bold;
+    font-size: 18px;
+}
+
 .players-list {
     display: flex;
     flex-direction: row;
@@ -905,6 +911,12 @@ body {
     text-align: center;
     font-size: 20px;
     margin-top: 10px;
+}
+
+.matrix-subtitle .player-count {
+    color: #00ff41;
+    font-weight: bold;
+    text-shadow: 0 0 10px rgba(0, 255, 65, 0.8);
 }
 
 @keyframes glitch {

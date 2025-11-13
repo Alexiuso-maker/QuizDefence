@@ -13,6 +13,9 @@ class MultiplayerManager {
         this.selectedQuestionTypes = null; // Will store selected question type keys
         this.gameMode = null; // 'quiz-defense' or 'the-hacker'
         this.gameDuration = 10; // For Hacker mode (in minutes)
+        this.passwordsSelected = new Map(); // Track who has selected password
+        this.autoStartTimer = null; // Timer for auto-starting game
+        this.autoStartCountdown = null; // Countdown interval
     }
 
     connect() {
@@ -207,6 +210,23 @@ class MultiplayerManager {
                 this.hackerScene.handleActivateShield(data);
             }
         });
+
+        // Hacker mode: Password selected
+        this.socket.on('password-selected', (data) => {
+            if (this.gameMode === 'the-hacker') {
+                this.passwordsSelected.set(data.playerId, true);
+                console.log('Password selected by:', data.playerName);
+
+                // Update waiting room display
+                if (document.getElementById('hacker-waiting-room').style.display !== 'none') {
+                    const room = { players: this.players };
+                    this.updateHackerPlayersList(room);
+                }
+
+                // Check if all players have selected
+                this.checkAllPasswordsSelected();
+            }
+        });
     }
 
     createRoom(playerName) {
@@ -321,6 +341,11 @@ class MultiplayerManager {
         // Update players list
         this.updateHackerPlayersList(room);
 
+        // Start auto-start timer for host (1 minute)
+        if (this.isHost && !this.autoStartTimer) {
+            this.startAutoStartTimer();
+        }
+
         // Show host settings
         if (this.isHost) {
             document.getElementById('hacker-host-settings').style.display = 'block';
@@ -344,10 +369,10 @@ class MultiplayerManager {
                 document.getElementById('question-type-selector').style.display = 'block';
                 this.setupQuestionTypeSelector();
             };
+        } else {
+            // Show password selection for non-host players only
+            this.setupPasswordSelection();
         }
-
-        // Show password selection for all players
-        this.setupPasswordSelection();
 
         // Leave button
         document.getElementById('hacker-leave-room-btn').onclick = () => {
@@ -359,12 +384,28 @@ class MultiplayerManager {
         const playersList = document.getElementById('hacker-players-list');
         playersList.innerHTML = '';
 
+        // Count non-host players
+        const nonHostPlayers = room.players.filter(p => !p.isHost).length;
+
+        // Update player count display
+        const playerCountDisplay = document.getElementById('hacker-player-count-display');
+        if (playerCountDisplay) {
+            playerCountDisplay.textContent = `${nonHostPlayers} ${nonHostPlayers === 1 ? 'spelar' : 'spelarar'}`;
+        }
+
         room.players.forEach(player => {
             const playerDiv = document.createElement('div');
             playerDiv.className = 'hacker-player-item';
+
+            // Check if player has selected password
+            const hasPassword = this.passwordsSelected.get(player.id);
+            const passwordStatus = !player.isHost ?
+                (hasPassword ? '<span style="color: #00ff41;">✓ Passord valt</span>' : '<span style="color: #ff0000;">⏳ Ventar...</span>')
+                : '';
+
             playerDiv.innerHTML = `
                 <span class="player-name">${player.name}</span>
-                ${player.isHost ? '<span style="color: #ffff00;"> [HOST]</span>' : ''}
+                ${player.isHost ? '<span style="color: #ffff00;"> [HOST]</span>' : passwordStatus}
             `;
             playersList.appendChild(playerDiv);
         });
@@ -426,16 +467,25 @@ class MultiplayerManager {
     updatePlayersList(room) {
         const playersList = document.getElementById('players-list');
         playersList.innerHTML = '';
-        
+
+        // Count non-host players
+        const nonHostPlayers = room.players.filter(p => !p.isHost).length;
+
+        // Update player count display
+        const playerCountDisplay = document.getElementById('player-count-display');
+        if (playerCountDisplay) {
+            playerCountDisplay.textContent = `(${nonHostPlayers} ${nonHostPlayers === 1 ? 'spelar' : 'spelarar'})`;
+        }
+
         room.players.forEach(player => {
             const playerDiv = document.createElement('div');
             playerDiv.className = player.isHost ? 'player-item host' : 'player-item';
-            
+
             playerDiv.innerHTML = `
                 <span class="player-name">${player.name}</span>
                 ${player.isHost ? '<span class="player-badge">HOST</span>' : ''}
             `;
-            
+
             playersList.appendChild(playerDiv);
         });
     }
@@ -517,12 +567,16 @@ class MultiplayerManager {
         const toggleBtn = document.getElementById('toggle-selector-btn');
         const selectorContent = document.getElementById('selector-content');
 
-        toggleBtn.addEventListener('click', () => {
+        // Remove old event listeners by cloning the button
+        const newToggleBtn = toggleBtn.cloneNode(true);
+        toggleBtn.parentNode.replaceChild(newToggleBtn, toggleBtn);
+
+        newToggleBtn.addEventListener('click', () => {
             selectorContent.classList.toggle('collapsed');
             if (selectorContent.classList.contains('collapsed')) {
-                toggleBtn.textContent = '▶ Vis/Skjul';
+                newToggleBtn.textContent = '▶ Vis/Skjul';
             } else {
-                toggleBtn.textContent = '▼ Vis/Skjul';
+                newToggleBtn.textContent = '▼ Vis/Skjul';
             }
         });
 
@@ -567,8 +621,12 @@ class MultiplayerManager {
             container.appendChild(itemDiv);
         });
 
-        // Setup select all / deselect all buttons
-        document.getElementById('select-all-btn').addEventListener('click', () => {
+        // Setup select all / deselect all buttons (clone to remove old listeners)
+        const selectAllBtn = document.getElementById('select-all-btn');
+        const newSelectAllBtn = selectAllBtn.cloneNode(true);
+        selectAllBtn.parentNode.replaceChild(newSelectAllBtn, selectAllBtn);
+
+        newSelectAllBtn.addEventListener('click', () => {
             this.selectedQuestionTypes = Object.keys(QUESTION_TYPES);
             document.querySelectorAll('.question-type-item').forEach(item => {
                 item.classList.add('selected');
@@ -576,7 +634,11 @@ class MultiplayerManager {
             });
         });
 
-        document.getElementById('deselect-all-btn').addEventListener('click', () => {
+        const deselectAllBtn = document.getElementById('deselect-all-btn');
+        const newDeselectAllBtn = deselectAllBtn.cloneNode(true);
+        deselectAllBtn.parentNode.replaceChild(newDeselectAllBtn, deselectAllBtn);
+
+        newDeselectAllBtn.addEventListener('click', () => {
             this.selectedQuestionTypes = [];
             document.querySelectorAll('.question-type-item').forEach(item => {
                 item.classList.remove('selected');
@@ -624,6 +686,105 @@ class MultiplayerManager {
             // Show the correct one
             const room = { players: this.players };
             this.showWaitingRoom(room);
+        }
+    }
+
+    startAutoStartTimer() {
+        // Create countdown display
+        const timerDisplay = document.createElement('div');
+        timerDisplay.id = 'hacker-auto-start-timer';
+        timerDisplay.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            color: #00ff41;
+            padding: 15px 25px;
+            border: 2px solid #00ff41;
+            border-radius: 10px;
+            font-size: 18px;
+            font-family: 'Courier New', monospace;
+            z-index: 10000;
+            text-align: center;
+        `;
+
+        const waitingRoom = document.getElementById('hacker-waiting-room');
+        if (waitingRoom) {
+            waitingRoom.appendChild(timerDisplay);
+        }
+
+        let secondsLeft = 60;
+        const updateTimer = () => {
+            if (timerDisplay.parentNode) {
+                timerDisplay.innerHTML = `
+                    <div>⏱️ AUTO-START</div>
+                    <div style="font-size: 24px; margin-top: 5px;">${secondsLeft}s</div>
+                `;
+            }
+        };
+
+        updateTimer();
+
+        this.autoStartCountdown = setInterval(() => {
+            secondsLeft--;
+            updateTimer();
+
+            if (secondsLeft <= 0) {
+                clearInterval(this.autoStartCountdown);
+                this.autoStartCountdown = null;
+                if (timerDisplay.parentNode) {
+                    timerDisplay.remove();
+                }
+            }
+        }, 1000);
+
+        // Set auto-start timer (1 minute)
+        this.autoStartTimer = setTimeout(() => {
+            console.log('Auto-starting game after 1 minute...');
+            if (this.autoStartCountdown) {
+                clearInterval(this.autoStartCountdown);
+                this.autoStartCountdown = null;
+            }
+            if (timerDisplay.parentNode) {
+                timerDisplay.remove();
+            }
+            this.startHackerGame();
+        }, 60000);
+    }
+
+    checkAllPasswordsSelected() {
+        if (!this.isHost || this.gameMode !== 'the-hacker') return;
+
+        // Get non-host players
+        const nonHostPlayers = this.players.filter(p => !p.isHost);
+
+        // Check if all non-host players have selected password
+        const allSelected = nonHostPlayers.every(p => this.passwordsSelected.get(p.id));
+
+        if (allSelected && nonHostPlayers.length > 0) {
+            console.log('All passwords selected! Starting game...');
+            // Clear auto-start timer if it exists
+            if (this.autoStartTimer) {
+                clearTimeout(this.autoStartTimer);
+                this.autoStartTimer = null;
+            }
+
+            // Clear countdown interval
+            if (this.autoStartCountdown) {
+                clearInterval(this.autoStartCountdown);
+                this.autoStartCountdown = null;
+            }
+
+            // Remove timer display
+            const timerDisplay = document.getElementById('hacker-auto-start-timer');
+            if (timerDisplay) {
+                timerDisplay.remove();
+            }
+
+            // Start game
+            setTimeout(() => {
+                this.startHackerGame();
+            }, 1000);
         }
     }
 
