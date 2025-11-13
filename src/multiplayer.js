@@ -778,22 +778,27 @@ class MultiplayerManager {
         // Initialize with NO types selected (empty array)
         this.selectedQuestionTypes = [];
 
-        // Setup toggle button
+        // Setup toggle button (only exists in Hacker mode, optional for UFO mode)
         const toggleBtn = document.getElementById('toggle-selector-btn');
         const selectorContent = document.getElementById('selector-content');
 
-        // Remove old event listeners by cloning the button
-        const newToggleBtn = toggleBtn.cloneNode(true);
-        toggleBtn.parentNode.replaceChild(newToggleBtn, toggleBtn);
+        if (toggleBtn && selectorContent) {
+            // Remove old event listeners by cloning the button
+            const newToggleBtn = toggleBtn.cloneNode(true);
+            toggleBtn.parentNode.replaceChild(newToggleBtn, toggleBtn);
 
-        newToggleBtn.addEventListener('click', () => {
-            selectorContent.classList.toggle('collapsed');
-            if (selectorContent.classList.contains('collapsed')) {
-                newToggleBtn.textContent = '▶ Vis/Skjul';
-            } else {
-                newToggleBtn.textContent = '▼ Vis/Skjul';
-            }
-        });
+            newToggleBtn.addEventListener('click', () => {
+                selectorContent.classList.toggle('collapsed');
+                if (selectorContent.classList.contains('collapsed')) {
+                    newToggleBtn.textContent = '▶ Vis/Skjul';
+                } else {
+                    newToggleBtn.textContent = '▼ Vis/Skjul';
+                }
+            });
+            console.log('[SETUP-QUESTION-SELECTOR] Toggle button setup complete');
+        } else {
+            console.log('[SETUP-QUESTION-SELECTOR] Toggle button not found (UFO mode - this is normal)');
+        }
 
         // Create checkbox for each question type
         console.log('[SETUP-QUESTION-SELECTOR] Starting to create checkboxes...');
@@ -869,42 +874,51 @@ class MultiplayerManager {
 
         // Setup select all / deselect all buttons (clone to remove old listeners)
         const selectAllBtn = document.getElementById('select-all-btn');
-        const newSelectAllBtn = selectAllBtn.cloneNode(true);
-        selectAllBtn.parentNode.replaceChild(newSelectAllBtn, selectAllBtn);
-
-        newSelectAllBtn.addEventListener('click', () => {
-            this.selectedQuestionTypes = Object.keys(QUESTION_TYPES);
-            document.querySelectorAll('.question-type-item').forEach(item => {
-                item.classList.add('selected');
-                item.querySelector('input[type="checkbox"]').checked = true;
-            });
-            // Broadcast to all players
-            if (this.isHost && this.roomCode) {
-                this.socket.emit('question-types-updated', {
-                    roomCode: this.roomCode,
-                    questionTypes: this.selectedQuestionTypes
-                });
-            }
-        });
-
         const deselectAllBtn = document.getElementById('deselect-all-btn');
-        const newDeselectAllBtn = deselectAllBtn.cloneNode(true);
-        deselectAllBtn.parentNode.replaceChild(newDeselectAllBtn, deselectAllBtn);
 
-        newDeselectAllBtn.addEventListener('click', () => {
-            this.selectedQuestionTypes = [];
-            document.querySelectorAll('.question-type-item').forEach(item => {
-                item.classList.remove('selected');
-                item.querySelector('input[type="checkbox"]').checked = false;
-            });
-            // Broadcast to all players
-            if (this.isHost && this.roomCode) {
-                this.socket.emit('question-types-updated', {
-                    roomCode: this.roomCode,
-                    questionTypes: this.selectedQuestionTypes
+        if (selectAllBtn && deselectAllBtn) {
+            const newSelectAllBtn = selectAllBtn.cloneNode(true);
+            selectAllBtn.parentNode.replaceChild(newSelectAllBtn, selectAllBtn);
+
+            newSelectAllBtn.addEventListener('click', () => {
+                this.selectedQuestionTypes = Object.keys(QUESTION_TYPES);
+                document.querySelectorAll('.question-type-item').forEach(item => {
+                    item.classList.add('selected');
+                    item.querySelector('input[type="checkbox"]').checked = true;
                 });
-            }
-        });
+                // Broadcast to all players
+                if (this.isHost && this.roomCode) {
+                    this.socket.emit('question-types-updated', {
+                        roomCode: this.roomCode,
+                        questionTypes: this.selectedQuestionTypes
+                    });
+                }
+            });
+
+            const newDeselectAllBtn = deselectAllBtn.cloneNode(true);
+            deselectAllBtn.parentNode.replaceChild(newDeselectAllBtn, deselectAllBtn);
+
+            newDeselectAllBtn.addEventListener('click', () => {
+                this.selectedQuestionTypes = [];
+                document.querySelectorAll('.question-type-item').forEach(item => {
+                    item.classList.remove('selected');
+                    item.querySelector('input[type="checkbox"]').checked = false;
+                });
+                // Broadcast to all players
+                if (this.isHost && this.roomCode) {
+                    this.socket.emit('question-types-updated', {
+                        roomCode: this.roomCode,
+                        questionTypes: this.selectedQuestionTypes
+                    });
+                }
+            });
+
+            console.log('[SETUP-QUESTION-SELECTOR] Select all/deselect all buttons setup complete');
+        } else {
+            console.error('[SETUP-QUESTION-SELECTOR] Select all/deselect all buttons not found!');
+        }
+
+        console.log('[SETUP-QUESTION-SELECTOR] Setup complete!');
     }
 
     getCategoryDisplayName(category) {
