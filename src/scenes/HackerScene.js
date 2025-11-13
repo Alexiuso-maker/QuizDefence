@@ -1,6 +1,22 @@
 import Phaser from 'phaser';
 import { QUESTION_TYPES } from './GameScene.js';
 
+// Helper: Format large numbers (100k, 1M, etc.)
+function formatScore(score) {
+    if (score >= 1000000) {
+        const millions = score / 1000000;
+        return millions % 1 === 0 ? `${millions}M` : `${millions.toFixed(1)}M`;
+    } else if (score >= 100000) {
+        const thousands = Math.floor(score / 1000);
+        return `${thousands}k`;
+    } else if (score >= 10000) {
+        const thousands = (score / 1000).toFixed(1);
+        return `${thousands}k`;
+    } else {
+        return score.toString();
+    }
+}
+
 // Password pool (age 11 appropriate)
 const PASSWORD_POOL = [
     'skibidi777', 'rizz999', 'sigma123', 'gyat456', 'fanum888',
@@ -262,12 +278,15 @@ export default class HackerScene extends Phaser.Scene {
                 console.warn(`Player ${data.playerId} not found in playerScores map`);
             }
 
-            // If I'm the one who selected password and game is active, start playing
+            // If I'm the one who selected password
             if (data.playerId === this.multiplayer.socket.id && this.gameActive && !this.isHost) {
-                console.log('Password selected! You can now play!');
-                // Generate first question if timer has started
                 if (this.timerStarted) {
+                    // Late joiner - game already started, generate question immediately
+                    console.log('Late joiner! Game already started - generating question now!');
                     this.generateNewQuestion();
+                } else {
+                    // Game hasn't started yet - wait for timer
+                    console.log('Password selected! Waiting for game to start...');
                 }
             }
 
@@ -294,14 +313,16 @@ export default class HackerScene extends Phaser.Scene {
 
         // Listen for game timer start
         this.multiplayer.socket.on('game-timer-started', () => {
-            console.log('Game timer has started!');
+            console.log('Game timer has started! 30-second countdown is over.');
 
             if (!this.isHost) {
-                // If I have a password, start generating questions
+                // If I have a password, start generating questions NOW
                 if (this.multiplayer.passwordsSelected.get(this.multiplayer.socket.id)) {
+                    console.log('I have a password - generating first question!');
                     this.generateNewQuestion();
                 } else {
                     // Show message that they can still join by selecting password
+                    console.log('No password yet - showing join message');
                     const feedbackDiv = document.getElementById('hacker-feedback');
                     if (feedbackDiv) {
                         feedbackDiv.innerHTML = '<p style="color: #ffff00;">Spelet har starta! Vel eit passord for å bli med!</p>';
@@ -991,10 +1012,11 @@ export default class HackerScene extends Phaser.Scene {
             const item = document.createElement('div');
             item.className = 'leaderboard-item';
             const shieldIcon = data.hasShield ? ' 🛡️' : '';
+            const formattedScore = formatScore(data.score);
             item.innerHTML = `
                 <span class="leaderboard-rank">#${index + 1}</span>
                 <span class="leaderboard-name">${data.name}${shieldIcon}</span>
-                <span class="leaderboard-score">${data.score} pts</span>
+                <span class="leaderboard-score">${formattedScore}</span>
             `;
             leaderboard.appendChild(item);
         });
@@ -1008,9 +1030,10 @@ export default class HackerScene extends Phaser.Scene {
             const item = document.createElement('div');
             item.className = 'hack-log-item';
             const time = new Date(event.timestamp).toLocaleTimeString();
+            const formattedPoints = formatScore(event.stolenPoints);
             item.innerHTML = `
                 <div class="hack-log-time">${time}</div>
-                <div>${event.hackerName} hacked ${event.victimName} for ${event.stolenPoints} points</div>
+                <div>${event.hackerName} hacked ${event.victimName} for ${formattedPoints}</div>
             `;
             hackLogContainer.appendChild(item);
         });
@@ -1032,11 +1055,12 @@ export default class HackerScene extends Phaser.Scene {
         let resultsHTML = '<h3 style="color: #00ff41;">FINAL SCORES</h3>';
         sortedPlayers.forEach(([id, data], index) => {
             const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : '';
+            const formattedScore = formatScore(data.score);
             resultsHTML += `
                 <div class="leaderboard-item">
                     <span class="leaderboard-rank">${medal} #${index + 1}</span>
                     <span class="leaderboard-name">${data.name}</span>
-                    <span class="leaderboard-score">${data.score} pts</span>
+                    <span class="leaderboard-score">${formattedScore}</span>
                 </div>
             `;
         });

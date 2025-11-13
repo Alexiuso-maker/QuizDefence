@@ -401,15 +401,43 @@ class MultiplayerManager {
             questionSelectorBtn.parentNode.replaceChild(newQuestionSelectorBtn, questionSelectorBtn);
 
             newQuestionSelectorBtn.onclick = () => {
-                // Reuse the same selector modal from Quiz Defense
+                console.log('Question selector button clicked');
+                // Show the question type selector as a modal
                 const selector = document.getElementById('question-type-selector');
+
+                // Make it appear as a fixed modal overlay
                 selector.style.display = 'block';
-                // Expand the content so it's visible
-                const selectorContent = document.getElementById('selector-content');
-                if (selectorContent) {
-                    selectorContent.classList.remove('collapsed');
-                }
+                selector.style.position = 'fixed';
+                selector.style.top = '50%';
+                selector.style.left = '50%';
+                selector.style.transform = 'translate(-50%, -50%)';
+                selector.style.zIndex = '10000';
+                selector.style.maxWidth = '600px';
+                selector.style.maxHeight = '80vh';
+                selector.style.overflow = 'auto';
+
+                // Setup the question type selector
                 this.setupQuestionTypeSelector();
+
+                // Add a close button if it doesn't exist
+                if (!selector.querySelector('.close-selector-btn')) {
+                    const closeBtn = document.createElement('button');
+                    closeBtn.className = 'close-selector-btn selector-btn';
+                    closeBtn.textContent = 'Lukk';
+                    closeBtn.onclick = () => {
+                        selector.style.display = 'none';
+                        // Reset positioning for when it's used in Quiz Defense
+                        selector.style.position = '';
+                        selector.style.top = '';
+                        selector.style.left = '';
+                        selector.style.transform = '';
+                        selector.style.zIndex = '';
+                    };
+                    const actions = selector.querySelector('.selector-actions');
+                    if (actions) {
+                        actions.appendChild(closeBtn);
+                    }
+                }
             };
         }
         // Note: Password selection moved to after game starts
