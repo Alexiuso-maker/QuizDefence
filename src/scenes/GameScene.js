@@ -1282,13 +1282,19 @@ export default class GameScene extends Phaser.Scene {
                 const allMonstersKilled = this.monstersThisWave >= this.monstersPerWave;
                 const noMonstersAlive = this.monsterGroup.countActive(true) === 0;
 
+                // BACKUP: If all monsters spawned and none alive, spawn boss regardless of kill count
+                // This handles edge cases where kill counting might be off
+                const backupCondition = allMonstersSpawned && noMonstersAlive;
+
                 // Debug logging (remove after testing)
                 if (allMonstersSpawned && !this.bossActive) {
                     console.log(`Boss spawn check: Spawned=${this.monstersSpawnedThisWave}/${this.monstersPerWave}, Killed=${this.monstersThisWave}/${this.monstersPerWave}, Alive=${this.monsterGroup.countActive(true)}`);
                 }
 
-                if (allMonstersSpawned && allMonstersKilled && noMonstersAlive && !this.bossActive) {
-                    console.log('✅ SPAWNING BOSS!');
+                // Primary condition: all spawned, all killed, none alive
+                // Backup condition: all spawned, none alive (ignore kill count)
+                if (((allMonstersSpawned && allMonstersKilled && noMonstersAlive) || backupCondition) && !this.bossActive) {
+                    console.log('✅ SPAWNING BOSS!' + (backupCondition && !allMonstersKilled ? ' (BACKUP LOGIC)' : ''));
                     this.spawnBoss();
                     this.bossActive = true;
                     this.lastSpawnTime = time;
