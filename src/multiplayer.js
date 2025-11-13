@@ -346,6 +346,11 @@ class MultiplayerManager {
             this.startAutoStartTimer();
         }
 
+        // For non-host players without password, show reminder
+        if (!this.isHost && !this.passwordsSelected.get(this.socket.id)) {
+            this.showPasswordReminder();
+        }
+
         // Show host settings
         if (this.isHost) {
             document.getElementById('hacker-host-settings').style.display = 'block';
@@ -440,6 +445,15 @@ class MultiplayerManager {
                 passwordOptions.querySelectorAll('.password-btn').forEach(b => b.classList.remove('selected'));
                 btn.classList.add('selected');
 
+                // Mark locally that we've selected password
+                this.passwordsSelected.set(this.socket.id, true);
+
+                // Remove password reminder if it exists
+                const reminder = document.getElementById('password-reminder');
+                if (reminder) {
+                    reminder.remove();
+                }
+
                 // Emit to server
                 this.socket.emit('select-password', {
                     roomCode: this.roomCode,
@@ -516,6 +530,13 @@ class MultiplayerManager {
     }
 
     startHackerGameClient() {
+        // Check if non-host player has selected password
+        if (!this.isHost && !this.passwordsSelected.get(this.socket.id)) {
+            // Player hasn't selected password - show blocking message
+            this.showPasswordRequiredMessage();
+            return;
+        }
+
         // Hide waiting room
         document.getElementById('hacker-waiting-room').style.display = 'none';
 
@@ -534,6 +555,79 @@ class MultiplayerManager {
                 duration: this.gameDuration
             }
         }));
+    }
+
+    showPasswordReminder() {
+        // Show pulsing reminder at top
+        const reminderDiv = document.createElement('div');
+        reminderDiv.id = 'password-reminder';
+        reminderDiv.style.cssText = `
+            position: fixed;
+            top: 100px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255, 0, 0, 0.9);
+            color: white;
+            padding: 15px 30px;
+            border: 2px solid #ff0000;
+            border-radius: 10px;
+            font-size: 18px;
+            font-family: 'Courier New', monospace;
+            z-index: 9999;
+            text-align: center;
+            animation: pulse 2s infinite;
+        `;
+        reminderDiv.innerHTML = '⚠️ VEL EIT PASSORD FOR Å STARTE!';
+
+        const waitingRoom = document.getElementById('hacker-waiting-room');
+        if (waitingRoom) {
+            waitingRoom.appendChild(reminderDiv);
+        }
+    }
+
+    showPasswordRequiredMessage() {
+        // Hide waiting room
+        document.getElementById('hacker-waiting-room').style.display = 'none';
+
+        // Create blocking message
+        const messageDiv = document.createElement('div');
+        messageDiv.id = 'password-required-message';
+        messageDiv.className = 'matrix-bg';
+        messageDiv.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+        `;
+
+        messageDiv.innerHTML = `
+            <div style="
+                background: rgba(0, 0, 0, 0.9);
+                border: 3px solid #ff0000;
+                border-radius: 15px;
+                padding: 40px;
+                text-align: center;
+                max-width: 500px;
+            ">
+                <h1 style="color: #ff0000; font-size: 36px; margin-bottom: 20px;">
+                    ⚠️ PASSORD PÅKREVD
+                </h1>
+                <p style="color: #00ff41; font-size: 20px; margin-bottom: 30px; font-family: 'Courier New', monospace;">
+                    Du må velje eit passord før du kan starte spelet!
+                </p>
+                <p style="color: #00ff41; font-size: 16px; opacity: 0.7; font-family: 'Courier New', monospace;">
+                    Spelet har starta for andre spelarar. Vent til neste runde, eller kontakt host.
+                </p>
+            </div>
+        `;
+
+        document.body.appendChild(messageDiv);
     }
 
     emitMonsterSpawned(monsterData) {
@@ -758,33 +852,13 @@ class MultiplayerManager {
         // Get non-host players
         const nonHostPlayers = this.players.filter(p => !p.isHost);
 
-        // Check if all non-host players have selected password
-        const allSelected = nonHostPlayers.every(p => this.passwordsSelected.get(p.id));
+        // Check if at least one player has selected password
+        const anySelected = nonHostPlayers.some(p => this.passwordsSelected.get(p.id));
 
-        if (allSelected && nonHostPlayers.length > 0) {
-            console.log('All passwords selected! Starting game...');
-            // Clear auto-start timer if it exists
-            if (this.autoStartTimer) {
-                clearTimeout(this.autoStartTimer);
-                this.autoStartTimer = null;
-            }
-
-            // Clear countdown interval
-            if (this.autoStartCountdown) {
-                clearInterval(this.autoStartCountdown);
-                this.autoStartCountdown = null;
-            }
-
-            // Remove timer display
-            const timerDisplay = document.getElementById('hacker-auto-start-timer');
-            if (timerDisplay) {
-                timerDisplay.remove();
-            }
-
-            // Start game
-            setTimeout(() => {
-                this.startHackerGame();
-            }, 1000);
+        if (anySelected && nonHostPlayers.length > 0) {
+            console.log('At least one password selected, game can start...');
+            // Note: Game will start via timer or manual start
+            // Players without password will see a blocking message
         }
     }
 
