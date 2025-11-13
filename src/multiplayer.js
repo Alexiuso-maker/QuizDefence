@@ -26,7 +26,21 @@ class MultiplayerManager {
         this.socket.on('room-created', (data) => {
             this.roomCode = data.roomCode;
             this.isHost = true;
-            // Game mode is already set by host
+
+            // Store game mode and immediately broadcast it
+            if (this.gameMode) {
+                // Store in localStorage as backup
+                localStorage.setItem(`room-${this.roomCode}-mode`, this.gameMode);
+
+                // Broadcast game mode immediately
+                setTimeout(() => {
+                    this.socket.emit('broadcast-game-mode', {
+                        roomCode: this.roomCode,
+                        gameMode: this.gameMode
+                    });
+                }, 100);
+            }
+
             this.showWaitingRoom(data.room);
         });
 
@@ -34,17 +48,83 @@ class MultiplayerManager {
         this.socket.on('room-updated', (room) => {
             this.players = room.players;
 
-            // If joining player, inherit game mode from room
-            if (!this.isHost && room.gameMode) {
-                this.gameMode = room.gameMode;
+            const isPlayerInRoom = room.players.some(p => p.id === this.socket.id);
+
+            // If we're joining and don't have game mode yet, wait for broadcast
+            if (!this.isHost && !this.gameMode) {
+                // Check localStorage again
+                const storedMode = localStorage.getItem(`room-${this.roomCode}-mode`);
+                if (storedMode) {
+                    this.gameMode = storedMode;
+                    console.log('Found game mode in storage during room-updated:', storedMode);
+                } else {
+                    // Default to Quiz Defense temporarily
+                    this.gameMode = 'quiz-defense';
+                    console.log('No game mode found, defaulting to quiz-defense');
+                }
             }
 
-            const isPlayerInRoom = room.players.some(p => p.id === this.socket.id);
             if (isPlayerInRoom && document.getElementById('lobby-screen').style.display !== 'none') {
                 this.showWaitingRoom(room);
             }
 
-            this.updatePlayersList(room);
+            // Host continuously broadcasts game mode to ensure all players get it
+            if (this.isHost && this.gameMode && this.roomCode) {
+                // Store in localStorage
+                localStorage.setItem(`room-${this.roomCode}-mode`, this.gameMode);
+
+                // Broadcast to all players
+                setTimeout(() => {
+                    this.socket.emit('broadcast-game-mode', {
+                        roomCode: this.roomCode,
+                        gameMode: this.gameMode
+                    });
+                }, 200);
+            }
+
+            // Update the correct players list based on game mode
+            if (this.gameMode === 'the-hacker') {
+                if (document.getElementById('hacker-waiting-room').style.display !== 'none') {
+                    this.updateHackerPlayersList(room);
+                }
+            } else {
+                if (document.getElementById('waiting-room').style.display !== 'none') {
+                    this.updatePlayersList(room);
+                }
+            }
+        });
+
+        // Handle broadcast-game-mode response (server might relay it back)
+        this.socket.on('broadcast-game-mode', (data) => {
+            if (!this.isHost && data.roomCode === this.roomCode) {
+                console.log('Received broadcast-game-mode:', data.gameMode);
+                this.handleGameModeUpdate(data.gameMode);
+            }
+        });
+
+        // Listen for game mode broadcasts from host
+        this.socket.on('game-mode-set', (data) => {
+            if (!this.isHost && data.roomCode === this.roomCode) {
+                console.log('Received game-mode-set from host:', data.gameMode);
+                this.handleGameModeUpdate(data.gameMode);
+
+                // Stop polling if we were
+                if (this.gameModePolling) {
+                    clearInterval(this.gameModePolling);
+                    this.gameModePolling = null;
+                }
+            }
+        });
+
+        // Handle game mode requests (host responds)
+        this.socket.on('request-game-mode', (data) => {
+            if (this.isHost && data.roomCode === this.roomCode && this.gameMode) {
+                console.log('Responding to game mode request with:', this.gameMode);
+                this.socket.emit('broadcast-game-mode', {
+                    roomCode: this.roomCode,
+                    gameMode: this.gameMode
+                });
+            }
         });
 
         // Room error
@@ -103,30 +183,83 @@ class MultiplayerManager {
 
     createRoom(playerName) {
         this.playerName = playerName;
-        this.socket.emit('create-room', {
+
+        // Try to send with game mode, but fall back to just name for compatibility
+        const roomData = {
             playerName: playerName,
-            gameMode: this.gameMode
-        });
+            gameMode: this.gameMode || 'quiz-defense'
+        };
+
+        // Try the new format first
+        this.socket.emit('create-room', roomData);
+
+        // Also try the old format for backwards compatibility
+        setTimeout(() => {
+            this.socket.emit('create-room', playerName);
+        }, 100);
     }
 
     joinRoom(roomCode, playerName) {
         this.playerName = playerName;
         this.roomCode = roomCode.toUpperCase();
+
+        // Try to get game mode from localStorage first
+        const storedMode = localStorage.getItem(`room-${this.roomCode}-mode`);
+        if (storedMode) {
+            this.gameMode = storedMode;
+            console.log('Retrieved game mode from storage:', storedMode);
+        }
+
         this.socket.emit('join-room', { roomCode: this.roomCode, playerName });
+
+        // Set up polling for game mode (fallback mechanism)
+        this.gameModePollingCount = 0;
+        this.gameModePolling = setInterval(() => {
+            if (this.gameModePollingCount++ > 10) {
+                // Stop after 10 attempts (5 seconds)
+                clearInterval(this.gameModePolling);
+                return;
+            }
+
+            // Request game mode from host
+            this.socket.emit('request-game-mode', { roomCode: this.roomCode });
+        }, 500);
     }
 
     startGameAsHost() {
         if (this.isHost) {
-            this.socket.emit('start-game');
+            // For The Hacker, we need to handle it differently
+            if (this.gameMode === 'the-hacker') {
+                // Use the same start-game event but we'll handle it client-side
+                this.socket.emit('start-game');
+
+                // Immediately trigger the hacker game start for all clients
+                setTimeout(() => {
+                    this.startGame();
+                }, 100);
+            } else {
+                // Normal Quiz Defense start
+                this.socket.emit('start-game');
+            }
         }
     }
 
     showWaitingRoom(room) {
         document.getElementById('lobby-screen').style.display = 'none';
 
+        console.log('Showing waiting room for game mode:', this.gameMode);
+        console.log('Is host:', this.isHost);
+        console.log('Room code:', this.roomCode);
+
         if (this.gameMode === 'the-hacker') {
             this.showHackerWaitingRoom(room);
         } else {
+            // Default to Quiz Defense if no game mode set
+            // This handles backwards compatibility
+            if (!this.gameMode) {
+                this.gameMode = 'quiz-defense';
+            }
+
             // Quiz Defense waiting room
             document.getElementById('waiting-room').style.display = 'flex';
             document.getElementById('display-room-code').textContent = this.roomCode;
@@ -256,11 +389,10 @@ class MultiplayerManager {
     startHackerGame() {
         if (!this.isHost) return;
 
-        // Emit start game event with duration
-        this.socket.emit('start-hacker-game', {
-            roomCode: this.roomCode,
-            duration: this.gameDuration
-        });
+        // Use the existing start-game event that the server knows
+        this.socket.emit('start-game');
+
+        // The game-starting event will trigger startGame() which handles The Hacker mode
     }
 
     updatePlayersList(room) {
@@ -295,9 +427,7 @@ class MultiplayerManager {
             // Quiz Defense game start
             document.getElementById('lobby-screen').style.display = 'none';
             document.getElementById('waiting-room').style.display = 'none';
-            document.getElementById('game-container').style.display = 'block';
-            document.getElementById('question-panel').style.display = 'block';
-            document.getElementById('players-stats-panel').style.display = 'block';
+            document.getElementById('game-wrapper').style.display = 'flex';
 
             document.getElementById('player-name-display').textContent = `Player: ${this.playerName}`;
 
@@ -439,6 +569,34 @@ class MultiplayerManager {
             'decimalArithmetic': 'Desimalrekneoperasjonar'
         };
         return categoryNames[category] || category;
+    }
+
+    handleGameModeUpdate(gameMode) {
+        const previousMode = this.gameMode;
+        this.gameMode = gameMode;
+
+        // Store in localStorage for persistence
+        localStorage.setItem(`room-${this.roomCode}-mode`, gameMode);
+
+        // Stop polling if we were
+        if (this.gameModePolling) {
+            clearInterval(this.gameModePolling);
+            this.gameModePolling = null;
+        }
+
+        // If game mode changed or we're showing wrong waiting room, update
+        if (previousMode !== gameMode ||
+            (gameMode === 'the-hacker' && document.getElementById('waiting-room').style.display !== 'none') ||
+            (gameMode === 'quiz-defense' && document.getElementById('hacker-waiting-room').style.display !== 'none')) {
+
+            // Hide both waiting rooms first
+            document.getElementById('waiting-room').style.display = 'none';
+            document.getElementById('hacker-waiting-room').style.display = 'none';
+
+            // Show the correct one
+            const room = { players: this.players };
+            this.showWaitingRoom(room);
+        }
     }
 
     leaveRoom() {

@@ -10,18 +10,34 @@ body {
     overflow: hidden;
 }
 
-/* Main container to hold game + question panel side by side */
-.game-wrapper {
+/* Main wrapper to hold game + panels - scales as one unit */
+#game-wrapper {
     display: flex;
-    gap: 0; /* No gap between game and panel */
-    align-items: center;
+    gap: 0;
+    align-items: stretch;
+    width: 1560px; /* 1280 game + 280 question panel */
+    height: 720px;
+    max-width: 100vw;
+    max-height: 100vh;
+    position: relative;
+}
+
+/* Scale the entire wrapper to fit viewport while maintaining aspect ratio */
+@media (max-width: 1560px), (max-height: 720px) {
+    #game-wrapper {
+        transform-origin: center center;
+        transform: scale(min(calc(100vw / 1560), calc(100vh / 720)));
+    }
 }
 
 #game-container {
     position: relative;
     box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
-    border-radius: 10px 0 0 10px; /* Round left corners only */
+    border-radius: 10px 0 0 10px;
     overflow: hidden;
+    flex-shrink: 0;
+    width: 1280px;
+    height: 720px;
 }
 
 /* Question Panel - Right next to game */
@@ -30,15 +46,17 @@ body {
     width: 280px;
     background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%);
     border: 3px solid #e74c3c;
-    border-left: none; /* No border between game and panel */
-    border-radius: 0 15px 15px 0; /* Round right corners only */
+    border-left: none;
+    border-radius: 0 10px 10px 0; /* Round right corners */
     padding: 15px;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
     z-index: 1000;
-    height: 720px; /* Match game height */
+    height: 720px;
+    flex-shrink: 0;
     display: flex;
     flex-direction: column;
     justify-content: center;
+    box-sizing: border-box;
 }
 
 #question-header {

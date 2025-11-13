@@ -87,16 +87,18 @@
         </div>
     </div>
 
-    <!-- Game Container -->
-    <div id="game-container" style="display: none;"></div>
+    <!-- Game Wrapper (contains game + panels) -->
+    <div id="game-wrapper" style="display: none;">
+        <!-- Game Container -->
+        <div id="game-container"></div>
 
-    <!-- Wave Countdown Display -->
-    <div id="wave-countdown-display" style="display: none;">
-        Neste bølgje startar om: <span id="wave-countdown-time">0</span>s
-    </div>
+        <!-- Wave Countdown Display -->
+        <div id="wave-countdown-display" style="display: none;">
+            Neste bølgje startar om: <span id="wave-countdown-time">0</span>s
+        </div>
 
-    <!-- Question Panel (Side) -->
-    <div id="question-panel" class="panel" style="display: none;">
+        <!-- Question Panel (Side) -->
+        <div id="question-panel" class="panel">
         <div id="question-header">
             <button class="panel-toggle">▶</button>
             <h3>Svar for ammunisjon!</h3>
@@ -118,13 +120,14 @@
         <div id="next-question-btn-container">
             <button id="next-question-btn">Nytt spørsmål</button>
         </div>
-    </div>
+        </div>
 
-    <!-- Players Stats Panel -->
-    <div id="players-stats-panel" class="panel" style="display: none;">
-        <button class="panel-toggle">▶</button>
-        <h4>Lagstatistikk</h4>
-        <div id="players-stats-list"></div>
+        <!-- Players Stats Panel -->
+        <div id="players-stats-panel" class="panel">
+            <button class="panel-toggle">▶</button>
+            <h4>Lagstatistikk</h4>
+            <div id="players-stats-list"></div>
+        </div>
     </div>
 
     <!-- Game Over Modal -->
