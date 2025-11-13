@@ -227,6 +227,12 @@ class MultiplayerManager {
                 this.checkAllPasswordsSelected();
             }
         });
+
+        // Listen for question type updates from host
+        this.socket.on('question-types-updated', (data) => {
+            console.log('Question types updated by host:', data.questionTypes);
+            this.selectedQuestionTypes = data.questionTypes;
+        });
     }
 
     createRoom(playerName) {
@@ -276,6 +282,14 @@ class MultiplayerManager {
 
     startGameAsHost() {
         if (this.isHost) {
+            // Broadcast question types before starting the game
+            if (this.selectedQuestionTypes) {
+                this.socket.emit('question-types-updated', {
+                    roomCode: this.roomCode,
+                    questionTypes: this.selectedQuestionTypes
+                });
+            }
+
             // For The Hacker, we need to handle it differently
             if (this.gameMode === 'the-hacker') {
                 // Use the same start-game event but we'll handle it client-side
@@ -369,9 +383,20 @@ class MultiplayerManager {
             };
 
             // Setup question selector button
-            document.getElementById('hacker-question-selector-btn').onclick = () => {
+            const questionSelectorBtn = document.getElementById('hacker-question-selector-btn');
+            // Remove old event listeners by cloning
+            const newQuestionSelectorBtn = questionSelectorBtn.cloneNode(true);
+            questionSelectorBtn.parentNode.replaceChild(newQuestionSelectorBtn, questionSelectorBtn);
+
+            newQuestionSelectorBtn.onclick = () => {
                 // Reuse the same selector modal from Quiz Defense
-                document.getElementById('question-type-selector').style.display = 'block';
+                const selector = document.getElementById('question-type-selector');
+                selector.style.display = 'block';
+                // Expand the content so it's visible
+                const selectorContent = document.getElementById('selector-content');
+                if (selectorContent) {
+                    selectorContent.classList.remove('collapsed');
+                }
                 this.setupQuestionTypeSelector();
             };
         } else {
@@ -692,6 +717,13 @@ class MultiplayerManager {
                     this.selectedQuestionTypes = this.selectedQuestionTypes.filter(k => k !== key);
                     itemDiv.classList.remove('selected');
                 }
+                // Broadcast question type changes to all players in the room
+                if (this.isHost && this.roomCode) {
+                    this.socket.emit('question-types-updated', {
+                        roomCode: this.roomCode,
+                        questionTypes: this.selectedQuestionTypes
+                    });
+                }
             });
 
             const label = document.createElement('label');
@@ -726,6 +758,13 @@ class MultiplayerManager {
                 item.classList.add('selected');
                 item.querySelector('input[type="checkbox"]').checked = true;
             });
+            // Broadcast to all players
+            if (this.isHost && this.roomCode) {
+                this.socket.emit('question-types-updated', {
+                    roomCode: this.roomCode,
+                    questionTypes: this.selectedQuestionTypes
+                });
+            }
         });
 
         const deselectAllBtn = document.getElementById('deselect-all-btn');
@@ -738,6 +777,13 @@ class MultiplayerManager {
                 item.classList.remove('selected');
                 item.querySelector('input[type="checkbox"]').checked = false;
             });
+            // Broadcast to all players
+            if (this.isHost && this.roomCode) {
+                this.socket.emit('question-types-updated', {
+                    roomCode: this.roomCode,
+                    questionTypes: this.selectedQuestionTypes
+                });
+            }
         });
     }
 

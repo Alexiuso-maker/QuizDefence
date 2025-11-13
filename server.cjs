@@ -188,6 +188,17 @@ io.on('connection', (socket) => {
         }
     });
 
+    // Question types updated (host selects question types)
+    socket.on('question-types-updated', (data) => {
+        const { roomCode, questionTypes } = data;
+        if (roomCode) {
+            // Broadcast to all other players in the room
+            socket.to(roomCode).emit('question-types-updated', {
+                questionTypes
+            });
+        }
+    });
+
     // Disconnect
     socket.on('disconnect', () => {
         console.log('Player disconnected:', socket.id);

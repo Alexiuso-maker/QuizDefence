@@ -824,6 +824,11 @@ export default class GameScene extends Phaser.Scene {
             this.monstersPerWave = data.newMonstersPerWave;
             this.baseSpawnInterval = data.newBaseSpawnInterval;
             this.minSpawnInterval = data.newMinSpawnInterval;
+
+            // Show upgrade modal for all players (not just host)
+            this.time.delayedCall(1500, () => {
+                this.showUpgradeModal();
+            });
         });
     }
 
