@@ -253,12 +253,14 @@ export default class HackerScene extends Phaser.Scene {
 
     setupSocketListeners() {
         // Listen for password selection from players
-        this.multiplayer.socket.on('player-password-selected', (data) => {
+        this.multiplayer.socket.on('password-selected', (data) => {
             const playerData = this.playerScores.get(data.playerId);
             if (playerData) {
                 playerData.password = data.password;
+                console.log(`Password stored for ${data.playerName}: ${data.password}`);
+            } else {
+                console.warn(`Player ${data.playerId} not found in playerScores map`);
             }
-            console.log('Password selected:', data.playerName, data.password);
         });
 
         // Listen for score updates
