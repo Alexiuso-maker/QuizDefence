@@ -811,9 +811,7 @@ export default class GameScene extends Phaser.Scene {
 
         // Listen for wave completion (boss killed)
         this.multiplayer.socket.on('wave-completed', (data) => {
-            if (this.isHost) return; // Host already handled this
-
-            console.log('Wave completed! New wave:', data.newWave);
+            console.log('Wave completed! New wave:', data.newWave, 'killerId:', data.killerId, 'myId:', this.multiplayer.socket.id);
 
             this.bossActive = false;
             this.monstersThisWave = 0;
@@ -825,17 +823,22 @@ export default class GameScene extends Phaser.Scene {
             this.baseSpawnInterval = data.newBaseSpawnInterval;
             this.minSpawnInterval = data.newMinSpawnInterval;
 
-            // Show upgrade modal for all players (not just host)
+            // Show upgrade modal for ALL players (including killer)
             this.time.delayedCall(1500, () => {
+                console.log('ALL PLAYERS: Showing upgrade modal from wave-completed');
                 this.showUpgradeModal();
             });
         });
 
-        // Listen for countdown end (synchronized from host)
-        this.multiplayer.socket.on('countdown-ended', () => {
-            if (this.isHost) return; // Host already handled this
+        // Listen for countdown end (synchronized)
+        this.multiplayer.socket.on('countdown-ended', (data) => {
+            // Skip if this is the player who triggered it
+            if (data && data.triggerId === this.multiplayer.socket.id) {
+                console.log('Skipping countdown-ended - I triggered it');
+                return;
+            }
 
-            console.log('Countdown ended (synchronized from host)');
+            console.log('Countdown ended (synchronized)');
 
             // End countdown on this client
             if (this.countdownInterval) {
@@ -1046,6 +1049,8 @@ export default class GameScene extends Phaser.Scene {
     }
 
     showUpgradeModal() {
+        console.log(`showUpgradeModal called - isHost: ${this.isHost}`);
+
         // Pause game
         this.isInCountdown = true;
 
@@ -1058,6 +1063,9 @@ export default class GameScene extends Phaser.Scene {
         const modal = document.getElementById('upgrade-modal');
         const upgradeOptions = document.getElementById('upgrade-options');
         upgradeOptions.innerHTML = '';
+
+        console.log('Upgrade modal element:', modal);
+        console.log('About to display modal...');
 
         selectedUpgrades.forEach(upgradeId => {
             const upgrade = UPGRADES[upgradeId];
@@ -1086,8 +1094,8 @@ export default class GameScene extends Phaser.Scene {
         // Store available upgrades for potential auto-select
         this.availableUpgrades = selectedUpgrades;
 
-        // Start countdown (60 seconds for upgrade selection)
-        this.startCountdown(60);
+        // Start countdown (30 seconds for upgrade selection)
+        this.startCountdown(30);
     }
 
     selectUpgrade(upgradeId) {
@@ -1150,12 +1158,13 @@ export default class GameScene extends Phaser.Scene {
     }
 
     endCountdown() {
-        // Host broadcasts countdown end to synchronize all players
-        if (this.isHost) {
-            this.multiplayer.socket.emit('countdown-ended', {
-                roomCode: this.multiplayer.roomCode
-            });
-        }
+        // Broadcast countdown end to synchronize all players
+        this.multiplayer.socket.emit('countdown-ended', {
+            roomCode: this.multiplayer.roomCode,
+            triggerId: this.multiplayer.socket.id
+        });
+
+        console.log('endCountdown called - broadcasting to all players');
 
         // Auto-select a random upgrade if modal is still open (no selection made)
         const modal = document.getElementById('upgrade-modal');
@@ -2062,6 +2071,7 @@ export default class GameScene extends Phaser.Scene {
         // Track wave progress
         if (isBoss) {
             // Boss killed! Start next wave
+            // Only the player who killed the boss handles wave progression
             this.bossActive = false;
             this.monstersThisWave = 0;
             this.monstersSpawnedThisWave = 0; // Reset spawn counter for new wave
@@ -2080,19 +2090,17 @@ export default class GameScene extends Phaser.Scene {
             this.baseSpawnInterval = Math.max(1000 / playerCount, this.baseSpawnInterval - 200);
             this.minSpawnInterval = Math.max(500 / playerCount, this.minSpawnInterval - 200);
 
-            // Sync wave change to other players
+            // Sync wave change to ALL players (they will all show upgrade modal from the event)
             this.multiplayer.socket.emit('wave-completed', {
                 roomCode: this.multiplayer.roomCode,
+                killerId: this.multiplayer.socket.id,
                 newWave: this.difficulty,
                 newMonstersPerWave: this.monstersPerWave,
                 newBaseSpawnInterval: this.baseSpawnInterval,
                 newMinSpawnInterval: this.minSpawnInterval
             });
 
-            // Show upgrade modal (slight delay for dramatic effect)
-            this.time.delayedCall(1500, () => {
-                this.showUpgradeModal();
-            });
+            // Note: Upgrade modal is shown via wave-completed event for ALL players
         } else {
             // Normal monster killed
             this.monstersThisWave++;

@@ -178,9 +178,11 @@ io.on('connection', (socket) => {
 
     // Wave completed (boss killed)
     socket.on('wave-completed', (data) => {
-        const { roomCode, newWave, newSpawnInterval, newMonstersPerWave, newBaseSpawnInterval, newMinSpawnInterval } = data;
+        const { roomCode, killerId, newWave, newSpawnInterval, newMonstersPerWave, newBaseSpawnInterval, newMinSpawnInterval } = data;
         if (roomCode) {
-            socket.to(roomCode).emit('wave-completed', {
+            // Broadcast to all players in room
+            io.to(roomCode).emit('wave-completed', {
+                killerId,
                 newWave,
                 newSpawnInterval,
                 newMonstersPerWave,
@@ -192,10 +194,10 @@ io.on('connection', (socket) => {
 
     // Countdown ended (upgrade phase over)
     socket.on('countdown-ended', (data) => {
-        const { roomCode } = data;
+        const { roomCode, triggerId } = data;
         if (roomCode) {
-            // Broadcast to all other players in room
-            socket.to(roomCode).emit('countdown-ended');
+            // Broadcast to all players in room
+            io.to(roomCode).emit('countdown-ended', { triggerId });
         }
     });
 
