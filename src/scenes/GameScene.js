@@ -234,7 +234,7 @@ const UPGRADES = {
 
 // --- Question Generator ---
 // Modular question type system - easy to add new types in the future
-const QUESTION_TYPES = {
+export const QUESTION_TYPES = {
     // Addition crossing over 10 (result between 10-30)
     additionCrossing10: {
         name: 'Addisjon over 10',
@@ -375,9 +375,13 @@ const QUESTION_TYPES = {
     }
 };
 
-function generateQuestion(difficulty) {
+function generateQuestion(difficulty, allowedTypes = null) {
+    // Use allowed types if provided, otherwise use all types
+    const questionTypeKeys = allowedTypes && allowedTypes.length > 0
+        ? allowedTypes
+        : Object.keys(QUESTION_TYPES);
+
     // Select random question type from available types
-    const questionTypeKeys = Object.keys(QUESTION_TYPES);
     const randomType = questionTypeKeys[Phaser.Math.Between(0, questionTypeKeys.length - 1)];
 
     // Generate question using selected type
@@ -890,7 +894,9 @@ export default class GameScene extends Phaser.Scene {
     }
 
     generateNewQuestion() {
-        this.currentQuestion = generateQuestion(this.difficulty);
+        // Use selected question types from host, or all types if none selected
+        const allowedTypes = this.multiplayer.selectedQuestionTypes;
+        this.currentQuestion = generateQuestion(this.difficulty, allowedTypes);
         document.getElementById('question-text').textContent = this.currentQuestion.question;
         document.getElementById('answer-input').value = '';
         document.getElementById('feedback-text').textContent = '';

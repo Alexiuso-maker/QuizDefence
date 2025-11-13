@@ -1,4 +1,5 @@
 import { io } from 'socket.io-client';
+import { QUESTION_TYPES } from './scenes/GameScene.js';
 
 class MultiplayerManager {
     constructor() {
@@ -8,6 +9,7 @@ class MultiplayerManager {
         this.isHost = false;
         this.players = [];
         this.gameScene = null;
+        this.selectedQuestionTypes = null; // Will store selected question type keys
     }
 
     connect() {
@@ -105,11 +107,13 @@ class MultiplayerManager {
         document.getElementById('lobby-screen').style.display = 'none';
         document.getElementById('waiting-room').style.display = 'flex';
         document.getElementById('display-room-code').textContent = this.roomCode;
-        
+
         if (this.isHost) {
             document.getElementById('start-game-btn').style.display = 'block';
+            document.getElementById('question-type-selector').style.display = 'block';
+            this.setupQuestionTypeSelector();
         }
-        
+
         this.updatePlayersList(room);
     }
 
@@ -170,6 +174,82 @@ class MultiplayerManager {
 
     emitStatsUpdate(stats) {
         this.socket.emit('update-stats', stats);
+    }
+
+    setupQuestionTypeSelector() {
+        const container = document.getElementById('question-types-list');
+        container.innerHTML = '';
+
+        // Initialize with all types selected
+        this.selectedQuestionTypes = Object.keys(QUESTION_TYPES);
+
+        // Create checkbox for each question type
+        Object.entries(QUESTION_TYPES).forEach(([key, typeData]) => {
+            const itemDiv = document.createElement('div');
+            itemDiv.className = 'question-type-item selected';
+            itemDiv.dataset.typeKey = key;
+
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.id = `qt-${key}`;
+            checkbox.checked = true;
+            checkbox.addEventListener('change', (e) => {
+                if (e.target.checked) {
+                    this.selectedQuestionTypes.push(key);
+                    itemDiv.classList.add('selected');
+                } else {
+                    this.selectedQuestionTypes = this.selectedQuestionTypes.filter(k => k !== key);
+                    itemDiv.classList.remove('selected');
+                }
+            });
+
+            const label = document.createElement('label');
+            label.className = 'question-type-label';
+            label.htmlFor = `qt-${key}`;
+            label.innerHTML = `
+                <span class="question-type-name">${typeData.name}</span>
+                <span class="question-type-category">${this.getCategoryDisplayName(typeData.category)}</span>
+            `;
+
+            // Make the whole div clickable
+            itemDiv.addEventListener('click', (e) => {
+                if (e.target !== checkbox) {
+                    checkbox.checked = !checkbox.checked;
+                    checkbox.dispatchEvent(new Event('change'));
+                }
+            });
+
+            itemDiv.appendChild(checkbox);
+            itemDiv.appendChild(label);
+            container.appendChild(itemDiv);
+        });
+
+        // Setup select all / deselect all buttons
+        document.getElementById('select-all-btn').addEventListener('click', () => {
+            this.selectedQuestionTypes = Object.keys(QUESTION_TYPES);
+            document.querySelectorAll('.question-type-item').forEach(item => {
+                item.classList.add('selected');
+                item.querySelector('input[type="checkbox"]').checked = true;
+            });
+        });
+
+        document.getElementById('deselect-all-btn').addEventListener('click', () => {
+            this.selectedQuestionTypes = [];
+            document.querySelectorAll('.question-type-item').forEach(item => {
+                item.classList.remove('selected');
+                item.querySelector('input[type="checkbox"]').checked = false;
+            });
+        });
+    }
+
+    getCategoryDisplayName(category) {
+        const categoryNames = {
+            'addition': 'Addisjon',
+            'subtraction': 'Subtraksjon',
+            'multiplication': 'Multiplikasjon',
+            'placeValue': 'Plassverdiar'
+        };
+        return categoryNames[category] || category;
     }
 
     leaveRoom() {
