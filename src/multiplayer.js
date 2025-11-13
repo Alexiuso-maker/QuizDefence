@@ -1,5 +1,5 @@
 import { io } from 'socket.io-client';
-import { QUESTION_TYPES } from './scenes/GameScene.js';
+import { QUESTION_TYPES } from './questionTypes.js';
 
 class MultiplayerManager {
     constructor() {

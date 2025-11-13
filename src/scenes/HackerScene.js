@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { QUESTION_TYPES } from './GameScene.js';
+import { QUESTION_TYPES } from '../questionTypes.js';
 
 // Helper: Format large numbers (100k, 1M, etc.)
 function formatScore(score) {
