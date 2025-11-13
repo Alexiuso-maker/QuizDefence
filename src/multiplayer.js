@@ -713,8 +713,8 @@ class MultiplayerManager {
         const container = document.getElementById('question-types-list');
         container.innerHTML = '';
 
-        // Initialize with all types selected
-        this.selectedQuestionTypes = Object.keys(QUESTION_TYPES);
+        // Initialize with NO types selected (empty array)
+        this.selectedQuestionTypes = [];
 
         // Setup toggle button
         const toggleBtn = document.getElementById('toggle-selector-btn');
@@ -736,13 +736,13 @@ class MultiplayerManager {
         // Create checkbox for each question type
         Object.entries(QUESTION_TYPES).forEach(([key, typeData]) => {
             const itemDiv = document.createElement('div');
-            itemDiv.className = 'question-type-item selected';
+            itemDiv.className = 'question-type-item'; // Start unselected
             itemDiv.dataset.typeKey = key;
 
             const checkbox = document.createElement('input');
             checkbox.type = 'checkbox';
             checkbox.id = `qt-${key}`;
-            checkbox.checked = true;
+            checkbox.checked = false; // Start unchecked
             checkbox.addEventListener('change', (e) => {
                 if (e.target.checked) {
                     this.selectedQuestionTypes.push(key);
