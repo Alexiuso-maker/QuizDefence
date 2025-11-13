@@ -533,7 +533,7 @@ export default class HackerScene extends Phaser.Scene {
             .filter(([id, data]) => {
                 // Exclude self
                 if (id === this.multiplayer.socket.id) return false;
-                // Exclude host (host can't be hacked)
+                // Exclude host (host doesn't play)
                 if (data.isHost) return false;
                 return true;
             })

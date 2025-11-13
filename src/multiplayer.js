@@ -139,11 +139,13 @@ class MultiplayerManager {
 
         // Game starting
         this.socket.on('game-starting', () => {
+            console.log('Received game-starting event, gameMode:', this.gameMode);
             this.startGame();
         });
 
         // Hacker game starting
         this.socket.on('hacker-game-starting', (data) => {
+            console.log('Received hacker-game-starting event, duration:', data.duration);
             this.gameDuration = data.duration;
             this.startGame();
         });
@@ -569,40 +571,59 @@ class MultiplayerManager {
     }
 
     startHackerGameClient() {
+        console.log('startHackerGameClient - isHost:', this.isHost, 'hasPassword:', this.passwordsSelected.get(this.socket.id));
+
         // Hide waiting room
         document.getElementById('hacker-waiting-room').style.display = 'none';
 
         if (this.isHost) {
-            // Show host dashboard
+            // Host goes straight to dashboard (no password needed)
             document.getElementById('hacker-host-dashboard').style.display = 'flex';
-
-            // Dispatch event to start Hacker Scene for host (without timer starting yet)
             this.startHackerScene();
         } else {
-            // For non-host players: Show password selection first
+            // Players must select password first
             if (!this.passwordsSelected.get(this.socket.id)) {
-                // Show password selection modal
+                console.log('Player needs to select password - showing modal');
                 this.showPasswordSelectionModal();
                 return;
             }
 
-            // If password already selected, proceed to game
+            // After password selected, show game container
+            console.log('Player has password - showing game');
             document.getElementById('hacker-game-container').style.display = 'flex';
             this.startHackerScene();
         }
     }
 
     showPasswordSelectionModal() {
+        console.log('showPasswordSelectionModal called');
+
         // Show game container with password selection overlay
         document.getElementById('hacker-game-container').style.display = 'flex';
 
-        // Show password selection in the hacker waiting room area
+        // Show password selection overlay
         const passwordSelection = document.getElementById('password-selection');
         passwordSelection.style.display = 'block';
 
+        // Make it look like a modal overlay
+        passwordSelection.style.position = 'fixed';
+        passwordSelection.style.top = '50%';
+        passwordSelection.style.left = '50%';
+        passwordSelection.style.transform = 'translate(-50%, -50%)';
+        passwordSelection.style.zIndex = '10000';
+        passwordSelection.style.background = 'rgba(0, 0, 0, 0.95)';
+        passwordSelection.style.padding = '30px';
+        passwordSelection.style.borderRadius = '15px';
+        passwordSelection.style.border = '2px solid #00ff41';
+
+        console.log('Password selection display:', passwordSelection.style.display);
+
         // Setup password selection if not already done
         if (document.getElementById('password-options').children.length === 0) {
+            console.log('Setting up password selection...');
             this.setupPasswordSelection();
+        } else {
+            console.log('Password options already exist:', document.getElementById('password-options').children.length);
         }
     }
 
