@@ -1282,7 +1282,13 @@ export default class GameScene extends Phaser.Scene {
                 const allMonstersKilled = this.monstersThisWave >= this.monstersPerWave;
                 const noMonstersAlive = this.monsterGroup.countActive(true) === 0;
 
+                // Debug logging (remove after testing)
+                if (allMonstersSpawned && !this.bossActive) {
+                    console.log(`Boss spawn check: Spawned=${this.monstersSpawnedThisWave}/${this.monstersPerWave}, Killed=${this.monstersThisWave}/${this.monstersPerWave}, Alive=${this.monsterGroup.countActive(true)}`);
+                }
+
                 if (allMonstersSpawned && allMonstersKilled && noMonstersAlive && !this.bossActive) {
+                    console.log('✅ SPAWNING BOSS!');
                     this.spawnBoss();
                     this.bossActive = true;
                     this.lastSpawnTime = time;
@@ -2058,8 +2064,15 @@ export default class GameScene extends Phaser.Scene {
 
     killMonsterSync(monster) {
         // Death effect without score
+        const isBoss = monster.getData('isBoss') || false;
+
+        // Count synchronized kills for boss spawning logic
+        if (!isBoss) {
+            this.monstersThisWave++;
+        }
+
         this.createDeathEffect(monster);
-        
+
         this.time.delayedCall(300, () => {
             this.destroyMonster(monster);
         });
