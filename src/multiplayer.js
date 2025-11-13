@@ -743,45 +743,46 @@ class MultiplayerManager {
     }
 
     setupQuestionTypeSelector() {
-        try {
-            console.log('[SETUP-QUESTION-SELECTOR] Starting setup');
+        console.log('[SETUP-QUESTION-SELECTOR] Starting setup');
 
-            // Check if already initialized
-            if (this.questionTypeSelectorInitialized) {
-                console.log('[SETUP-QUESTION-SELECTOR] Already initialized - skipping setup');
-                return;
-            }
-
-            console.log('[SETUP-QUESTION-SELECTOR] QUESTION_TYPES:', QUESTION_TYPES);
-            console.log('[SETUP-QUESTION-SELECTOR] typeof QUESTION_TYPES:', typeof QUESTION_TYPES);
-
-            if (!QUESTION_TYPES) {
-                throw new Error('QUESTION_TYPES is undefined');
-            }
-
-            const keys = Object.keys(QUESTION_TYPES);
-            console.log('[SETUP-QUESTION-SELECTOR] QUESTION_TYPES keys:', keys);
-            console.log('[SETUP-QUESTION-SELECTOR] Number of question types:', keys.length);
-
-            if (keys.length === 0) {
-                throw new Error('QUESTION_TYPES has no entries');
-            }
-
-            const container = document.getElementById('question-types-list');
-            if (!container) {
-                throw new Error('Container element "question-types-list" not found in DOM');
-            }
-
-            console.log('[SETUP-QUESTION-SELECTOR] Container found:', container);
-            console.log('[SETUP-QUESTION-SELECTOR] Container current HTML length:', container.innerHTML.length);
-            container.innerHTML = '';
-            console.log('[SETUP-QUESTION-SELECTOR] Container cleared');
-        } catch (error) {
-            console.error('[SETUP-QUESTION-SELECTOR] FATAL ERROR:', error);
-            console.error('[SETUP-QUESTION-SELECTOR] Error stack:', error.stack);
-            alert(`ERROR loading question types: ${error.message}\n\nPlease refresh the page. If the problem persists, check browser console.`);
+        // Check if already initialized
+        if (this.questionTypeSelectorInitialized) {
+            console.log('[SETUP-QUESTION-SELECTOR] Already initialized - skipping setup');
             return;
         }
+
+        // Validate QUESTION_TYPES
+        console.log('[SETUP-QUESTION-SELECTOR] QUESTION_TYPES:', QUESTION_TYPES);
+        console.log('[SETUP-QUESTION-SELECTOR] typeof QUESTION_TYPES:', typeof QUESTION_TYPES);
+
+        if (!QUESTION_TYPES) {
+            console.error('[SETUP-QUESTION-SELECTOR] FATAL ERROR: QUESTION_TYPES is undefined');
+            alert('ERROR: Question types not loaded. Please refresh the page.');
+            return;
+        }
+
+        const keys = Object.keys(QUESTION_TYPES);
+        console.log('[SETUP-QUESTION-SELECTOR] QUESTION_TYPES keys:', keys);
+        console.log('[SETUP-QUESTION-SELECTOR] Number of question types:', keys.length);
+
+        if (keys.length === 0) {
+            console.error('[SETUP-QUESTION-SELECTOR] FATAL ERROR: QUESTION_TYPES has no entries');
+            alert('ERROR: No question types found. Please refresh the page.');
+            return;
+        }
+
+        // Get container element (must be accessible throughout the function)
+        const container = document.getElementById('question-types-list');
+        if (!container) {
+            console.error('[SETUP-QUESTION-SELECTOR] FATAL ERROR: Container element not found in DOM');
+            alert('ERROR: Question types container not found. Please refresh the page.');
+            return;
+        }
+
+        console.log('[SETUP-QUESTION-SELECTOR] Container found:', container);
+        console.log('[SETUP-QUESTION-SELECTOR] Container current HTML length:', container.innerHTML.length);
+        container.innerHTML = '';
+        console.log('[SETUP-QUESTION-SELECTOR] Container cleared');
 
         // Initialize with NO types selected (empty array)
         this.selectedQuestionTypes = [];
