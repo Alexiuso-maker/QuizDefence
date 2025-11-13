@@ -183,6 +183,19 @@ class MultiplayerManager {
         // Initialize with all types selected
         this.selectedQuestionTypes = Object.keys(QUESTION_TYPES);
 
+        // Setup toggle button
+        const toggleBtn = document.getElementById('toggle-selector-btn');
+        const selectorContent = document.getElementById('selector-content');
+
+        toggleBtn.addEventListener('click', () => {
+            selectorContent.classList.toggle('collapsed');
+            if (selectorContent.classList.contains('collapsed')) {
+                toggleBtn.textContent = '▶ Vis/Skjul';
+            } else {
+                toggleBtn.textContent = '▼ Vis/Skjul';
+            }
+        });
+
         // Create checkbox for each question type
         Object.entries(QUESTION_TYPES).forEach(([key, typeData]) => {
             const itemDiv = document.createElement('div');
@@ -247,7 +260,11 @@ class MultiplayerManager {
             'addition': 'Addisjon',
             'subtraction': 'Subtraksjon',
             'multiplication': 'Multiplikasjon',
-            'placeValue': 'Plassverdiar'
+            'placeValue': 'Plassverdiar',
+            'decimal': 'Desimaltal',
+            'fractionDecimal': 'Brøk til desimal',
+            'decimalComparison': 'Samanlikning',
+            'decimalArithmetic': 'Desimalrekneoperasjonar'
         };
         return categoryNames[category] || category;
     }

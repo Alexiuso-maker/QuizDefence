@@ -44,13 +44,20 @@
 
             <!-- Question Type Selection (Host only) -->
             <div id="question-type-selector" class="question-selector" style="display: none;">
-                <h3>Vel spørsmålstypar</h3>
-                <p class="selector-hint">Vel kva slags spørsmål elevane skal øve på:</p>
-                <div id="question-types-list" class="question-types-grid">
-                    <!-- Question type checkboxes will be inserted here -->
+                <div class="selector-header" id="selector-header">
+                    <h3>Vel spørsmålstypar</h3>
+                    <button class="toggle-selector-btn" id="toggle-selector-btn">▼ Vis/Skjul</button>
                 </div>
-                <button id="select-all-btn" class="selector-btn">Vel alle</button>
-                <button id="deselect-all-btn" class="selector-btn">Vel ingen</button>
+                <div id="selector-content" class="selector-content">
+                    <p class="selector-hint">Vel kva slags spørsmål elevane skal øve på:</p>
+                    <div id="question-types-list" class="question-types-grid">
+                        <!-- Question type checkboxes will be inserted here -->
+                    </div>
+                    <div class="selector-actions">
+                        <button id="select-all-btn" class="selector-btn">Vel alle</button>
+                        <button id="deselect-all-btn" class="selector-btn">Vel ingen</button>
+                    </div>
+                </div>
             </div>
 
             <div class="waiting-actions">
