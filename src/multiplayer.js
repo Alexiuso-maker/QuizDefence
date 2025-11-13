@@ -179,6 +179,34 @@ class MultiplayerManager {
                 this.gameScene.updatePlayerStats(data);
             }
         });
+
+        // Hacker mode: Player score updated
+        this.socket.on('player-score-updated', (data) => {
+            if (this.hackerScene) {
+                this.hackerScene.updatePlayerScore(data);
+            }
+        });
+
+        // Hacker mode: Hack attempt
+        this.socket.on('hack-attempt', (data) => {
+            if (this.hackerScene) {
+                this.hackerScene.handleHackAttempt(data);
+            }
+        });
+
+        // Hacker mode: Remove shield
+        this.socket.on('remove-shield', (data) => {
+            if (this.hackerScene) {
+                this.hackerScene.handleRemoveShield(data);
+            }
+        });
+
+        // Hacker mode: Activate shield
+        this.socket.on('activate-shield', (data) => {
+            if (this.hackerScene) {
+                this.hackerScene.handleActivateShield(data);
+            }
+        });
     }
 
     createRoom(playerName) {

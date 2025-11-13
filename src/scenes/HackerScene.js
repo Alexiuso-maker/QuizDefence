@@ -762,8 +762,86 @@ export default class HackerScene extends Phaser.Scene {
         this.multiplayer.socket.emit('update-player-score', {
             roomCode: this.multiplayer.roomCode,
             playerId: this.multiplayer.socket.id,
+            playerName: this.multiplayer.playerName,
             score: this.score
         });
+    }
+
+    updatePlayerScore(data) {
+        // Update the score in playerScores map
+        const playerData = this.playerScores.get(data.playerId);
+        if (playerData) {
+            playerData.score = data.score;
+        } else {
+            // Player not in map yet, add them
+            this.playerScores.set(data.playerId, {
+                name: data.playerName || 'Unknown',
+                score: data.score,
+                password: null,
+                hasShield: false
+            });
+        }
+
+        // Update host dashboard if this is the host
+        if (this.multiplayer.isHost) {
+            this.updateHostDashboard();
+        }
+    }
+
+    handleHackAttempt(data) {
+        // Update victim's score
+        const victimData = this.playerScores.get(data.victimId);
+        if (victimData) {
+            victimData.score = data.newVictimScore;
+        }
+
+        // Update hacker's score
+        const hackerData = this.playerScores.get(data.hackerId);
+        if (hackerData) {
+            hackerData.score = data.newHackerScore;
+        }
+
+        // If this is me being hacked, update my score
+        if (data.victimId === this.multiplayer.socket.id) {
+            this.score = data.newVictimScore;
+            this.updateScoreDisplay();
+        }
+
+        // If this is me hacking, update my score
+        if (data.hackerId === this.multiplayer.socket.id) {
+            this.score = data.newHackerScore;
+            this.updateScoreDisplay();
+        }
+
+        // Add to hack log
+        this.hackLog.push(data);
+
+        // Update host dashboard
+        if (this.multiplayer.isHost) {
+            this.updateHostDashboard();
+        }
+    }
+
+    handleRemoveShield(data) {
+        // Remove shield from player
+        const playerData = this.playerScores.get(data.playerId);
+        if (playerData) {
+            playerData.hasShield = false;
+        }
+
+        // If this is me, update my shield status
+        if (data.playerId === this.multiplayer.socket.id) {
+            this.hasShield = false;
+            this.updateStatusIcons();
+        }
+    }
+
+    handleActivateShield(data) {
+        // Activate shield for player
+        const playerData = this.playerScores.get(data.playerId);
+        if (playerData) {
+            playerData.hasShield = true;
+        }
     }
 
     updateHostDashboard() {
@@ -778,9 +856,10 @@ export default class HackerScene extends Phaser.Scene {
         sortedPlayers.forEach(([id, data], index) => {
             const item = document.createElement('div');
             item.className = 'leaderboard-item';
+            const shieldIcon = data.hasShield ? ' 🛡️' : '';
             item.innerHTML = `
                 <span class="leaderboard-rank">#${index + 1}</span>
-                <span class="leaderboard-name">${data.name}</span>
+                <span class="leaderboard-name">${data.name}${shieldIcon}</span>
                 <span class="leaderboard-score">${data.score} pts</span>
             `;
             leaderboard.appendChild(item);

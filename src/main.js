@@ -166,6 +166,8 @@ function startHackerGame(multiplayer, duration) {
         const scene = game.scene.getScene('HackerScene');
         if (scene) {
             scene.startGame(duration);
+            // Store reference in multiplayer manager
+            multiplayer.hackerScene = scene;
         }
     }, 100);
 }
