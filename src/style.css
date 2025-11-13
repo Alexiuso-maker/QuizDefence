@@ -785,3 +785,604 @@ body {
     background: rgba(52, 152, 219, 0.5);
     transform: translateY(-1px);
 }
+
+/* ========================================
+   GAME MODE SELECTION
+   ======================================== */
+
+#game-mode-screen {
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+}
+
+.mode-container {
+    text-align: center;
+    max-width: 1200px;
+    padding: 40px;
+}
+
+.mode-container h1 {
+    font-size: 48px;
+    color: #3498db;
+    margin-bottom: 10px;
+    text-shadow: 0 0 20px rgba(52, 152, 219, 0.5);
+}
+
+.mode-options {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+    gap: 40px;
+    margin-top: 40px;
+}
+
+.mode-card {
+    background: rgba(52, 73, 94, 0.8);
+    border: 3px solid #34495e;
+    border-radius: 20px;
+    padding: 40px;
+    cursor: pointer;
+    transition: all 0.3s;
+    text-align: center;
+}
+
+.mode-card:hover {
+    transform: translateY(-10px);
+    border-color: #3498db;
+    box-shadow: 0 10px 40px rgba(52, 152, 219, 0.3);
+}
+
+.mode-icon {
+    font-size: 80px;
+    margin-bottom: 20px;
+}
+
+.mode-card h2 {
+    color: #ecf0f1;
+    font-size: 32px;
+    margin-bottom: 15px;
+}
+
+.mode-card p {
+    color: #bdc3c7;
+    font-size: 16px;
+    line-height: 1.6;
+    margin-bottom: 25px;
+}
+
+.mode-btn {
+    background: linear-gradient(135deg, #3498db, #2980b9);
+    color: white;
+    border: none;
+    padding: 15px 40px;
+    font-size: 18px;
+    font-weight: bold;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.mode-btn:hover {
+    transform: scale(1.05);
+    box-shadow: 0 5px 20px rgba(52, 152, 219, 0.5);
+}
+
+/* ========================================
+   THE HACKER - MATRIX THEME
+   ======================================== */
+
+.matrix-bg {
+    background: #0d0208;
+    color: #00ff41;
+    font-family: 'Courier New', monospace;
+    position: relative;
+    overflow: hidden;
+}
+
+#matrix-canvas, #host-matrix-canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 0;
+    opacity: 0.15;
+}
+
+.matrix-title {
+    font-size: 48px;
+    color: #00ff41;
+    text-align: center;
+    text-shadow: 0 0 20px #00ff41;
+    letter-spacing: 5px;
+    font-weight: bold;
+    animation: glitch 2s infinite;
+}
+
+.matrix-subtitle {
+    color: #00ff41;
+    text-align: center;
+    font-size: 20px;
+    margin-top: 10px;
+}
+
+@keyframes glitch {
+    0%, 100% { text-shadow: 0 0 20px #00ff41; }
+    50% { text-shadow: 0 0 30px #00ff41, 0 0 40px #00ff41; }
+}
+
+.glow-text {
+    text-shadow: 0 0 10px #00ff41, 0 0 20px #00ff41;
+    animation: glow-pulse 2s ease-in-out infinite;
+}
+
+@keyframes glow-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+}
+
+/* Hacker Waiting Room */
+#hacker-waiting-room {
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.hacker-waiting-container {
+    max-width: 800px;
+    width: 90%;
+    padding: 40px;
+    border: 2px solid #00ff41;
+    border-radius: 10px;
+    background: rgba(13, 2, 8, 0.95);
+    position: relative;
+    z-index: 1;
+}
+
+.hacker-players-list {
+    background: rgba(0, 0, 0, 0.5);
+    border: 1px solid #00ff41;
+    border-radius: 8px;
+    padding: 20px;
+    margin: 20px 0;
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.hacker-player-item {
+    padding: 10px;
+    margin: 5px 0;
+    background: rgba(0, 255, 65, 0.1);
+    border-left: 3px solid #00ff41;
+    color: #00ff41;
+}
+
+.hacker-settings {
+    background: rgba(0, 0, 0, 0.5);
+    border: 1px solid #00ff41;
+    border-radius: 8px;
+    padding: 20px;
+    margin: 20px 0;
+}
+
+.setting-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin: 15px 0;
+    color: #00ff41;
+}
+
+.setting-row label {
+    font-size: 16px;
+}
+
+.setting-row input[type="number"] {
+    background: rgba(0, 0, 0, 0.7);
+    border: 1px solid #00ff41;
+    color: #00ff41;
+    padding: 8px 15px;
+    font-size: 16px;
+    border-radius: 5px;
+    width: 100px;
+}
+
+/* Password Selection */
+.password-selection {
+    background: rgba(0, 0, 0, 0.5);
+    border: 1px solid #00ff41;
+    border-radius: 8px;
+    padding: 20px;
+    margin: 20px 0;
+}
+
+.password-selection h3 {
+    color: #00ff41;
+    text-align: center;
+    margin-bottom: 10px;
+}
+
+.password-hint {
+    color: #00ff41;
+    text-align: center;
+    font-size: 14px;
+    opacity: 0.8;
+    margin-bottom: 20px;
+}
+
+.password-options {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 15px;
+    margin: 20px 0;
+}
+
+.password-btn {
+    background: rgba(0, 255, 65, 0.1);
+    border: 2px solid #00ff41;
+    color: #00ff41;
+    padding: 15px;
+    font-size: 18px;
+    font-family: 'Courier New', monospace;
+    font-weight: bold;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.password-btn:hover {
+    background: rgba(0, 255, 65, 0.3);
+    transform: scale(1.05);
+    box-shadow: 0 0 20px rgba(0, 255, 65, 0.5);
+}
+
+.password-btn.selected {
+    background: rgba(0, 255, 65, 0.4);
+    border-color: #00ff41;
+    box-shadow: 0 0 30px rgba(0, 255, 65, 0.7);
+}
+
+.password-selected {
+    color: #00ff41;
+    text-align: center;
+    font-size: 16px;
+    font-weight: bold;
+    margin-top: 15px;
+}
+
+/* Hacker Game Container */
+#hacker-game-container {
+    width: 100vw;
+    height: 100vh;
+    position: relative;
+}
+
+.hacker-hud {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    display: flex;
+    justify-content: space-between;
+    padding: 20px;
+    background: rgba(0, 0, 0, 0.8);
+    border-bottom: 2px solid #00ff41;
+    z-index: 10;
+}
+
+.hud-left, .hud-right {
+    display: flex;
+    gap: 30px;
+}
+
+.hud-item {
+    display: flex;
+    flex-direction: column;
+}
+
+.hud-label {
+    font-size: 12px;
+    color: #00ff41;
+    opacity: 0.7;
+    margin-bottom: 5px;
+}
+
+.hud-value {
+    font-size: 24px;
+    color: #00ff41;
+    font-weight: bold;
+}
+
+/* Status Icons */
+.status-icons {
+    position: absolute;
+    top: 100px;
+    right: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    z-index: 10;
+}
+
+.status-icon {
+    background: rgba(0, 255, 65, 0.2);
+    border: 2px solid #00ff41;
+    padding: 10px;
+    border-radius: 8px;
+    font-size: 24px;
+    text-align: center;
+    min-width: 60px;
+    box-shadow: 0 0 15px rgba(0, 255, 65, 0.3);
+}
+
+.status-icon-label {
+    font-size: 10px;
+    color: #00ff41;
+    margin-top: 5px;
+}
+
+/* Question Panel */
+.hacker-question-panel {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 90%;
+    max-width: 700px;
+    background: rgba(0, 0, 0, 0.95);
+    border: 3px solid #00ff41;
+    border-radius: 10px;
+    padding: 30px;
+    box-shadow: 0 0 50px rgba(0, 255, 65, 0.5);
+    z-index: 5;
+}
+
+.terminal-header {
+    margin-bottom: 20px;
+    border-bottom: 1px solid #00ff41;
+    padding-bottom: 10px;
+}
+
+.terminal-prompt {
+    color: #00ff41;
+    font-size: 16px;
+    font-weight: bold;
+}
+
+.hacker-question {
+    font-size: 28px;
+    color: #00ff41;
+    text-align: center;
+    margin: 30px 0;
+    line-height: 1.5;
+    min-height: 80px;
+}
+
+.answer-options {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+    margin-top: 30px;
+}
+
+.answer-btn {
+    background: rgba(0, 255, 65, 0.1);
+    border: 2px solid #00ff41;
+    color: #00ff41;
+    padding: 20px;
+    font-size: 20px;
+    font-family: 'Courier New', monospace;
+    font-weight: bold;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+    min-height: 70px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.answer-btn:hover {
+    background: rgba(0, 255, 65, 0.3);
+    transform: scale(1.05);
+    box-shadow: 0 0 20px rgba(0, 255, 65, 0.5);
+}
+
+.answer-btn.correct {
+    background: rgba(0, 255, 0, 0.4);
+    border-color: #00ff00;
+    animation: correct-flash 0.5s;
+}
+
+.answer-btn.incorrect {
+    background: rgba(255, 0, 0, 0.4);
+    border-color: #ff0000;
+    animation: shake 0.5s;
+}
+
+@keyframes correct-flash {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; transform: scale(1.1); }
+}
+
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-10px); }
+    75% { transform: translateX(10px); }
+}
+
+.hacker-feedback {
+    text-align: center;
+    font-size: 18px;
+    margin-top: 20px;
+    min-height: 30px;
+    font-weight: bold;
+}
+
+/* Host Dashboard */
+#hacker-host-dashboard {
+    width: 100vw;
+    height: 100vh;
+    position: relative;
+}
+
+.host-dashboard {
+    position: relative;
+    z-index: 1;
+    padding: 20px;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.dashboard-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px;
+    background: rgba(0, 0, 0, 0.8);
+    border: 2px solid #00ff41;
+    border-radius: 10px;
+    margin-bottom: 20px;
+}
+
+.host-btn {
+    background: rgba(0, 255, 65, 0.2);
+    border: 2px solid #00ff41;
+    color: #00ff41;
+    padding: 12px 30px;
+    font-size: 16px;
+    font-family: 'Courier New', monospace;
+    font-weight: bold;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.host-btn:hover {
+    background: rgba(0, 255, 65, 0.4);
+    transform: scale(1.05);
+}
+
+.host-btn.danger {
+    border-color: #ff0000;
+    color: #ff0000;
+}
+
+.host-btn.danger:hover {
+    background: rgba(255, 0, 0, 0.4);
+}
+
+.host-timer {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.dashboard-content {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    flex: 1;
+    overflow: hidden;
+}
+
+.dashboard-panel {
+    background: rgba(0, 0, 0, 0.8);
+    border: 2px solid #00ff41;
+    border-radius: 10px;
+    padding: 20px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.dashboard-panel h2 {
+    color: #00ff41;
+    text-align: center;
+    margin-bottom: 15px;
+    font-size: 24px;
+}
+
+.host-leaderboard, .host-hack-log {
+    flex: 1;
+    overflow-y: auto;
+    padding: 10px;
+}
+
+.leaderboard-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 12px;
+    margin: 5px 0;
+    background: rgba(0, 255, 65, 0.1);
+    border-left: 3px solid #00ff41;
+    border-radius: 5px;
+}
+
+.leaderboard-rank {
+    font-size: 18px;
+    font-weight: bold;
+    color: #00ff41;
+}
+
+.leaderboard-name {
+    font-size: 18px;
+    color: #00ff41;
+}
+
+.leaderboard-score {
+    font-size: 18px;
+    font-weight: bold;
+    color: #00ff41;
+}
+
+.hack-log-item {
+    padding: 10px;
+    margin: 5px 0;
+    background: rgba(255, 0, 0, 0.1);
+    border-left: 3px solid #ff0000;
+    border-radius: 5px;
+    color: #00ff41;
+    font-size: 14px;
+}
+
+.hack-log-time {
+    opacity: 0.6;
+    font-size: 12px;
+}
+
+/* Modals */
+.terminal-modal {
+    background: rgba(0, 0, 0, 0.98);
+    border: 3px solid #00ff41;
+    box-shadow: 0 0 50px rgba(0, 255, 65, 0.7);
+}
+
+.modal-title {
+    color: #00ff41;
+    text-align: center;
+    font-size: 36px;
+    margin-bottom: 20px;
+    text-shadow: 0 0 20px #00ff41;
+}
+
+.hack-target {
+    color: #ff0000;
+    text-align: center;
+    font-size: 24px;
+    margin: 20px 0;
+    font-weight: bold;
+}
+
+.hack-instruction {
+    color: #00ff41;
+    text-align: center;
+    font-size: 16px;
+    margin-bottom: 30px;
+}

@@ -332,43 +332,43 @@ export const QUESTION_TYPES = {
         }
     },
 
-    // Place value - tens place (tidelsplassen)
+    // Place value - tens place (tiarplass)
     placeValueTens: {
-        name: 'Tidelsplassen',
+        name: 'Tiarplass (heiltal)',
         category: 'placeValue',
         generate: () => {
             const number = Phaser.Math.Between(10, 9999);
             const tensDigit = Math.floor((number / 10) % 10);
             return {
-                question: `Kva tal står på tidelsplassen?\n${number}`,
+                question: `Kva tal står på tiarplass?\n${number}`,
                 answer: tensDigit.toString()
             };
         }
     },
 
-    // Place value - hundreds place (hundredelsplassen)
+    // Place value - hundreds place (hundrarplass)
     placeValueHundreds: {
-        name: 'Hundredelsplassen',
+        name: 'Hundrarplass (heiltal)',
         category: 'placeValue',
         generate: () => {
             const number = Phaser.Math.Between(100, 9999);
             const hundredsDigit = Math.floor((number / 100) % 10);
             return {
-                question: `Kva tal står på hundredelsplassen?\n${number}`,
+                question: `Kva tal står på hundrarplass?\n${number}`,
                 answer: hundredsDigit.toString()
             };
         }
     },
 
-    // Place value - thousands place (tusendelsplassen)
+    // Place value - thousands place (tusenplass)
     placeValueThousands: {
-        name: 'Tusendelsplassen',
+        name: 'Tusenplass (heiltal)',
         category: 'placeValue',
         generate: () => {
             const number = Phaser.Math.Between(1000, 9999);
             const thousandsDigit = Math.floor(number / 1000);
             return {
-                question: `Kva tal står på tusendelsplassen?\n${number}`,
+                question: `Kva tal står på tusenplass?\n${number}`,
                 answer: thousandsDigit.toString()
             };
         }
@@ -376,7 +376,7 @@ export const QUESTION_TYPES = {
 
     // Decimal place value - tenths (tidelar)
     decimalTenths: {
-        name: 'Tidelar',
+        name: 'Tidelsplassen (desimaltal)',
         category: 'decimal',
         generate: () => {
             const wholeNumber = Phaser.Math.Between(0, 99);
@@ -391,7 +391,7 @@ export const QUESTION_TYPES = {
 
     // Decimal place value - hundredths (hundredelar)
     decimalHundredths: {
-        name: 'Hundredelar',
+        name: 'Hundredelsplassen (desimaltal)',
         category: 'decimal',
         generate: () => {
             const wholeNumber = Phaser.Math.Between(0, 99);

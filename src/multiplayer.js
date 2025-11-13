@@ -9,7 +9,10 @@ class MultiplayerManager {
         this.isHost = false;
         this.players = [];
         this.gameScene = null;
+        this.hackerScene = null;
         this.selectedQuestionTypes = null; // Will store selected question type keys
+        this.gameMode = null; // 'quiz-defense' or 'the-hacker'
+        this.gameDuration = 10; // For Hacker mode (in minutes)
     }
 
     connect() {
@@ -47,6 +50,12 @@ class MultiplayerManager {
 
         // Game starting
         this.socket.on('game-starting', () => {
+            this.startGame();
+        });
+
+        // Hacker game starting
+        this.socket.on('hacker-game-starting', (data) => {
+            this.gameDuration = data.duration;
             this.startGame();
         });
 
@@ -105,16 +114,125 @@ class MultiplayerManager {
 
     showWaitingRoom(room) {
         document.getElementById('lobby-screen').style.display = 'none';
-        document.getElementById('waiting-room').style.display = 'flex';
-        document.getElementById('display-room-code').textContent = this.roomCode;
 
+        if (this.gameMode === 'the-hacker') {
+            this.showHackerWaitingRoom(room);
+        } else {
+            // Quiz Defense waiting room
+            document.getElementById('waiting-room').style.display = 'flex';
+            document.getElementById('display-room-code').textContent = this.roomCode;
+
+            if (this.isHost) {
+                document.getElementById('start-game-btn').style.display = 'block';
+                document.getElementById('question-type-selector').style.display = 'block';
+                this.setupQuestionTypeSelector();
+            }
+
+            this.updatePlayersList(room);
+        }
+    }
+
+    showHackerWaitingRoom(room) {
+        document.getElementById('hacker-waiting-room').style.display = 'flex';
+        document.getElementById('hacker-room-code').textContent = this.roomCode;
+
+        // Update players list
+        this.updateHackerPlayersList(room);
+
+        // Show host settings
         if (this.isHost) {
-            document.getElementById('start-game-btn').style.display = 'block';
-            document.getElementById('question-type-selector').style.display = 'block';
-            this.setupQuestionTypeSelector();
+            document.getElementById('hacker-host-settings').style.display = 'block';
+            document.getElementById('hacker-start-game-btn').style.display = 'block';
+
+            // Setup duration input
+            const durationInput = document.getElementById('game-duration-input');
+            durationInput.value = this.gameDuration;
+            durationInput.oninput = (e) => {
+                this.gameDuration = parseInt(e.target.value) || 10;
+            };
+
+            // Setup start game button
+            document.getElementById('hacker-start-game-btn').onclick = () => {
+                this.startHackerGame();
+            };
         }
 
-        this.updatePlayersList(room);
+        // Show password selection for all players
+        this.setupPasswordSelection();
+
+        // Leave button
+        document.getElementById('hacker-leave-room-btn').onclick = () => {
+            location.reload();
+        };
+    }
+
+    updateHackerPlayersList(room) {
+        const playersList = document.getElementById('hacker-players-list');
+        playersList.innerHTML = '';
+
+        room.players.forEach(player => {
+            const playerDiv = document.createElement('div');
+            playerDiv.className = 'hacker-player-item';
+            playerDiv.innerHTML = `
+                <span class="player-name">${player.name}</span>
+                ${player.isHost ? '<span style="color: #ffff00;"> [HOST]</span>' : ''}
+            `;
+            playersList.appendChild(playerDiv);
+        });
+    }
+
+    setupPasswordSelection() {
+        const passwordSelection = document.getElementById('password-selection');
+        passwordSelection.style.display = 'block';
+
+        const passwordOptions = document.getElementById('password-options');
+        passwordOptions.innerHTML = '';
+
+        // Generate 3 random passwords
+        const PASSWORD_POOL = [
+            'skibidi777', 'rizz999', 'sigma123', 'gyat456', 'fanum888',
+            'mewing42', 'bussin99', 'slay321', 'yeet007', 'bruh404',
+            'sus111', 'noob360', 'epic500', 'giga666', 'omega888',
+            '676767676', 'SIXSEVEN!', '12341234', 'hello123!', 'noob1234',
+            '999999999', 'abc123abc', 'YEET!007', 'SIGMA!23', 'BRUH!404',
+            '111222333', 'xyz999xyz', 'GOAT!999', 'MEGA!777', '555666777'
+        ];
+
+        const shuffled = [...PASSWORD_POOL].sort(() => Math.random() - 0.5);
+        const threePasswords = shuffled.slice(0, 3);
+
+        threePasswords.forEach(password => {
+            const btn = document.createElement('button');
+            btn.className = 'password-btn';
+            btn.textContent = password;
+            btn.onclick = () => {
+                // Select this password
+                passwordOptions.querySelectorAll('.password-btn').forEach(b => b.classList.remove('selected'));
+                btn.classList.add('selected');
+
+                // Emit to server
+                this.socket.emit('select-password', {
+                    roomCode: this.roomCode,
+                    playerId: this.socket.id,
+                    playerName: this.playerName,
+                    password: password
+                });
+
+                // Show confirmation
+                document.getElementById('password-selected-msg').style.display = 'block';
+            };
+            passwordOptions.appendChild(btn);
+        });
+    }
+
+    startHackerGame() {
+        if (!this.isHost) return;
+
+        // Emit start game event with duration
+        this.socket.emit('start-hacker-game', {
+            roomCode: this.roomCode,
+            duration: this.gameDuration
+        });
     }
 
     updatePlayersList(room) {
@@ -143,16 +261,42 @@ class MultiplayerManager {
     }
 
     startGame() {
-        document.getElementById('lobby-screen').style.display = 'none';
-        document.getElementById('waiting-room').style.display = 'none';
-        document.getElementById('game-container').style.display = 'block';
-        document.getElementById('question-panel').style.display = 'block';
-        document.getElementById('players-stats-panel').style.display = 'block';
+        if (this.gameMode === 'the-hacker') {
+            this.startHackerGameClient();
+        } else {
+            // Quiz Defense game start
+            document.getElementById('lobby-screen').style.display = 'none';
+            document.getElementById('waiting-room').style.display = 'none';
+            document.getElementById('game-container').style.display = 'block';
+            document.getElementById('question-panel').style.display = 'block';
+            document.getElementById('players-stats-panel').style.display = 'block';
 
-        document.getElementById('player-name-display').textContent = `Player: ${this.playerName}`;
+            document.getElementById('player-name-display').textContent = `Player: ${this.playerName}`;
 
-        window.dispatchEvent(new CustomEvent('start-multiplayer-game', {
-            detail: { multiplayer: this }
+            window.dispatchEvent(new CustomEvent('start-multiplayer-game', {
+                detail: { multiplayer: this }
+            }));
+        }
+    }
+
+    startHackerGameClient() {
+        // Hide waiting room
+        document.getElementById('hacker-waiting-room').style.display = 'none';
+
+        if (this.isHost) {
+            // Show host dashboard
+            document.getElementById('hacker-host-dashboard').style.display = 'flex';
+        } else {
+            // Show game container for players
+            document.getElementById('hacker-game-container').style.display = 'flex';
+        }
+
+        // Dispatch event to start Hacker Scene
+        window.dispatchEvent(new CustomEvent('start-hacker-game', {
+            detail: {
+                multiplayer: this,
+                duration: this.gameDuration
+            }
         }));
     }
 

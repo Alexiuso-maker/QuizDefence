@@ -7,8 +7,32 @@
     <link rel="stylesheet" href="/src/style.css">
 </head>
 <body>
+    <!-- Game Mode Selection Screen -->
+    <div id="game-mode-screen">
+        <div class="mode-container">
+            <h1>🎮 Vel Spelmodus</h1>
+            <p class="subtitle">Vel kva spel du vil spele</p>
+
+            <div class="mode-options">
+                <div class="mode-card" id="select-quiz-defense">
+                    <div class="mode-icon">🏰</div>
+                    <h2>Quiz Defense</h2>
+                    <p>Samarbeidsspel der de forsvarer basen mot UFO-er ved å svare på mattespørsmål</p>
+                    <button class="mode-btn">Vel dette spelet</button>
+                </div>
+
+                <div class="mode-card" id="select-hacker">
+                    <div class="mode-icon">💻</div>
+                    <h2>The Hacker</h2>
+                    <p>Konkurransespel der du hackar motstandarar og samlar poeng ved å svare rett</p>
+                    <button class="mode-btn">Vel dette spelet</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Lobby Screen -->
-    <div id="lobby-screen">
+    <div id="lobby-screen" style="display: none;">
         <div class="lobby-container">
             <h1>🎮 Mattespel</h1>
             <p class="subtitle">Samarbeidsspel i matte</p>
@@ -129,6 +153,158 @@
             <div id="upgrade-options" class="upgrade-grid">
                 <!-- Upgrade cards will be inserted here -->
             </div>
+        </div>
+    </div>
+
+    <!-- The Hacker - Waiting Room -->
+    <div id="hacker-waiting-room" style="display: none;">
+        <div class="hacker-waiting-container matrix-bg">
+            <h1 class="matrix-title">THE HACKER</h1>
+            <p class="matrix-subtitle">Rom: <span id="hacker-room-code"></span></p>
+
+            <div id="hacker-players-list" class="hacker-players-list"></div>
+
+            <!-- Host Settings -->
+            <div id="hacker-host-settings" class="hacker-settings" style="display: none;">
+                <h3>⚙️ Innstillingar</h3>
+                <div class="setting-row">
+                    <label>Speltid (minutt):</label>
+                    <input type="number" id="game-duration-input" min="1" max="60" value="10">
+                </div>
+                <div class="setting-row">
+                    <label>Spørsmålstypar:</label>
+                    <button id="hacker-question-selector-btn" class="selector-btn">Vel spørsmål</button>
+                </div>
+            </div>
+
+            <!-- Password Selection (All Players) -->
+            <div id="password-selection" class="password-selection" style="display: none;">
+                <h3>🔐 Vel ditt passord</h3>
+                <p class="password-hint">Vel eit passord - dette treng du for å forsvare deg mot hack!</p>
+                <div id="password-options" class="password-options">
+                    <!-- 3 password buttons will be inserted here -->
+                </div>
+                <p id="password-selected-msg" class="password-selected" style="display: none;">✓ Passord valt!</p>
+            </div>
+
+            <div class="waiting-actions">
+                <button id="hacker-start-game-btn" class="lobby-btn primary" style="display: none;">Start spel</button>
+                <button id="hacker-leave-room-btn" class="lobby-btn secondary">Forlat rom</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- The Hacker - Game Container -->
+    <div id="hacker-game-container" class="matrix-bg" style="display: none;">
+        <canvas id="matrix-canvas"></canvas>
+
+        <!-- Player HUD -->
+        <div id="hacker-hud" class="hacker-hud">
+            <div class="hud-left">
+                <div class="hud-item">
+                    <span class="hud-label">SPELAR:</span>
+                    <span id="hacker-player-name" class="hud-value"></span>
+                </div>
+                <div class="hud-item">
+                    <span class="hud-label">POENG:</span>
+                    <span id="hacker-score" class="hud-value glow-text">0</span>
+                </div>
+            </div>
+            <div class="hud-right">
+                <div class="hud-item">
+                    <span class="hud-label">TID:</span>
+                    <span id="hacker-timer" class="hud-value">10:00</span>
+                </div>
+                <div class="hud-item">
+                    <span class="hud-label">POSISJON:</span>
+                    <span id="hacker-rank" class="hud-value">#1</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Status Icons -->
+        <div id="hacker-status-icons" class="status-icons">
+            <!-- Active powerups will show here -->
+        </div>
+
+        <!-- Question Panel -->
+        <div id="hacker-question-panel" class="hacker-question-panel">
+            <div class="terminal-header">
+                <span class="terminal-prompt">&gt; SYSTEM_QUERY:</span>
+            </div>
+            <div id="hacker-question-text" class="hacker-question"></div>
+            <div id="hacker-answer-options" class="answer-options">
+                <!-- 4 multiple choice buttons will be inserted here -->
+            </div>
+            <div id="hacker-feedback" class="hacker-feedback"></div>
+        </div>
+    </div>
+
+    <!-- The Hacker - Host Dashboard -->
+    <div id="hacker-host-dashboard" class="matrix-bg" style="display: none;">
+        <canvas id="host-matrix-canvas"></canvas>
+
+        <div class="host-dashboard">
+            <h1 class="matrix-title">HOST DASHBOARD</h1>
+
+            <div class="dashboard-controls">
+                <button id="host-pause-btn" class="host-btn">⏸ Pause</button>
+                <button id="host-end-btn" class="host-btn danger">⏹ Avslutt</button>
+                <div class="host-timer">
+                    <span class="hud-label">TID GJENSTÅR:</span>
+                    <span id="host-timer-display" class="hud-value glow-text">10:00</span>
+                </div>
+            </div>
+
+            <div class="dashboard-content">
+                <!-- Leaderboard -->
+                <div class="dashboard-panel">
+                    <h2>🏆 LEADERBOARD</h2>
+                    <div id="host-leaderboard" class="host-leaderboard">
+                        <!-- Player scores will be inserted here -->
+                    </div>
+                </div>
+
+                <!-- Hack Log -->
+                <div class="dashboard-panel">
+                    <h2>🔓 HACK LOG</h2>
+                    <div id="host-hack-log" class="host-hack-log">
+                        <!-- Hack events will be inserted here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Reward Modal -->
+    <div id="reward-modal" class="modal" style="display: none;">
+        <div class="modal-content terminal-modal">
+            <div id="reward-content">
+                <!-- Reward animation and text will be inserted here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Hack Modal -->
+    <div id="hack-modal" class="modal" style="display: none;">
+        <div class="modal-content terminal-modal">
+            <h2 class="modal-title glitch">HACK INITIATED</h2>
+            <p id="hack-target-name" class="hack-target"></p>
+            <p class="hack-instruction">Vel riktig passord for å stele 30% av poenga:</p>
+            <div id="hack-password-options" class="password-options">
+                <!-- 3 password buttons will be inserted here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Game Over Modal (Hacker) -->
+    <div id="hacker-game-over-modal" class="modal" style="display: none;">
+        <div class="modal-content terminal-modal">
+            <h2 class="modal-title">SYSTEM TERMINATED</h2>
+            <div id="hacker-final-results">
+                <!-- Final leaderboard will be inserted here -->
+            </div>
+            <button id="hacker-return-lobby-btn" class="lobby-btn primary">Tilbake til lobby</button>
         </div>
     </div>
 

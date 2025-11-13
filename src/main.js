@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import GameScene from './scenes/GameScene.js';
+import HackerScene from './scenes/HackerScene.js';
 import MultiplayerManager from './multiplayer.js';
 
 // --- Configuration ---
@@ -15,6 +16,7 @@ document.addEventListener('DOMContentLoaded', () => {
     multiplayerManager = new MultiplayerManager();
     multiplayerManager.connect();
 
+    setupGameModeSelection(); // Setup game mode selection
     setupPanelToggles(); // Setup panel toggle buttons
 
     // Get references to lobby buttons
@@ -68,11 +70,32 @@ document.addEventListener('DOMContentLoaded', () => {
         multiplayerManager.leaveRoom();
     };
     
-    // Listen for game start event from multiplayer manager
+    // Listen for game start events from multiplayer manager
     window.addEventListener('start-multiplayer-game', (event) => {
         startPhaserGame(event.detail.multiplayer);
     });
+
+    window.addEventListener('start-hacker-game', (event) => {
+        startHackerGame(event.detail.multiplayer, event.detail.duration);
+    });
 });
+
+function setupGameModeSelection() {
+    const quizDefenseCard = document.getElementById('select-quiz-defense');
+    const hackerCard = document.getElementById('select-hacker');
+
+    quizDefenseCard.onclick = () => {
+        multiplayerManager.gameMode = 'quiz-defense';
+        document.getElementById('game-mode-screen').style.display = 'none';
+        document.getElementById('lobby-screen').style.display = 'flex';
+    };
+
+    hackerCard.onclick = () => {
+        multiplayerManager.gameMode = 'the-hacker';
+        document.getElementById('game-mode-screen').style.display = 'none';
+        document.getElementById('lobby-screen').style.display = 'flex';
+    };
+}
 
 function setupPanelToggles() {
     document.querySelectorAll('.panel-toggle').forEach(button => {
@@ -102,9 +125,40 @@ function startPhaserGame(multiplayer) {
             autoCenter: Phaser.Scale.CENTER_BOTH
         }
     };
-    
+
     game = new Phaser.Game(config);
-    
+
     // Pass multiplayer manager to the game scene so it can send/receive events
     game.registry.set('multiplayer', multiplayer);
+}
+
+function startHackerGame(multiplayer, duration) {
+    // --- Initialize Phaser Game for Hacker Mode ---
+    const config = {
+        type: Phaser.AUTO,
+        width: GAME_WIDTH,
+        height: GAME_HEIGHT,
+        parent: multiplayer.isHost ? 'hacker-host-dashboard' : 'hacker-game-container',
+        transparent: true, // Make canvas transparent for Matrix background
+        physics: {
+            default: 'arcade',
+            arcade: {
+                debug: false
+            }
+        },
+        scene: HackerScene
+    };
+
+    game = new Phaser.Game(config);
+
+    // Pass multiplayer manager to the game scene
+    game.registry.set('multiplayer', multiplayer);
+
+    // Start the game with duration
+    setTimeout(() => {
+        const scene = game.scene.getScene('HackerScene');
+        if (scene) {
+            scene.startGame(duration);
+        }
+    }, 100);
 }
