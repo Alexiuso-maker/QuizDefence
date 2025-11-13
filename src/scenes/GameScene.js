@@ -12,7 +12,7 @@ const AMMO_PER_QUESTION = 2;
 // Boss constants
 const BOSS_SPAWN_INTERVAL = 15; // Boss every 10 monsters
 const BOSS_SIZE_MULTIPLIER = 2.5; // 2.5x bigger
-const BOSS_HEALTH_MULTIPLIER = 3; // 3x more health (reduced from 8)
+const BOSS_HEALTH_MULTIPLIER = 0.6; // 20% of original value (3 * 0.2 = 0.6)
 const BOSS_SPEED_MULTIPLIER = 0.8; // Slower but tankier
 
 // Weapon configurations
@@ -291,9 +291,10 @@ export default class GameScene extends Phaser.Scene {
         this.difficulty = 1;
         this.monstersKilled = 0;
         this.monstersSpawned = 0; // Track total spawned for boss timing
+        // Reduced spawn by 30%: was 30, now 21 base
         // Scale monsters by 50% per additional player (not 100%)
-        // 1 player = 30, 2 players = 45, 3 players = 60, 4 players = 75
-        this.monstersPerWave = 30 + (30 * 0.5 * (playerCount - 1));
+        // 1 player = 21, 2 players = 31.5, 3 players = 42, 4 players = 52.5
+        this.monstersPerWave = 21 + (21 * 0.5 * (playerCount - 1));
         this.monstersThisWave = 0; // Track kills this wave
         this.monstersSpawnedThisWave = 0; // Track spawns this wave
         this.bossActive = false; // Is boss currently active?
@@ -1073,8 +1074,9 @@ export default class GameScene extends Phaser.Scene {
         // Generate unique monster ID
         const monsterId = `${this.multiplayer.socket.id}-${this.nextMonsterId++}`;
         
-        // INCREASED HEALTH: Was 30 + (difficulty * 10), now much higher
-        const baseHealth = 10 + (this.difficulty * 5);
+        // Health starts scaling from wave 5 (waves 1-4 have constant health)
+        const healthScaling = Math.max(0, this.difficulty - 4); // 0 for waves 1-4, then increases
+        const baseHealth = 10 + (healthScaling * 5);
 
         // Speed increases by 1% per wave (much more gradual)
         const monsterSpeed = BASE_MONSTER_SPEED * Math.pow(1.01, this.difficulty - 1);
@@ -1118,9 +1120,9 @@ export default class GameScene extends Phaser.Scene {
         // Boss speed: 1% per wave, then 40% of that for slower boss movement
         const bossSpeed = (BASE_MONSTER_SPEED * Math.pow(1.01, this.difficulty - 1)) * 0.4;
 
-        // Boss size: Start at 1.25x, grow to 3.5x by wave 20
-        // Wave 1: 1.25x, Wave 10: 2.125x, Wave 20: 3x
-        const bossScale = 1.25 + (this.difficulty - 1) * 0.1;
+        // Boss size: Start 50% bigger (1.875x instead of 1.25x), grow with same % increase
+        // Wave 1: 1.875x (1.25 * 1.5), Wave 10: 3.1875x, Wave 20: 4.5x
+        const bossScale = (1.25 * 1.5) + (this.difficulty - 1) * 0.1;
 
         // Boss data
         const bossData = {
@@ -1710,10 +1712,10 @@ export default class GameScene extends Phaser.Scene {
             this.difficulty++;
             this.waveText.setText(`Wave: ${this.difficulty}`);
 
-            // Calculate monsters per wave: starts at 30, increases with difficulty
+            // Calculate monsters per wave: reduced by 30% from original
             const playerCount = Math.max(1, this.multiplayer.players.length); // Ensure at least 1 player
-            // Increase by 2 monsters per wave: Wave 1=30, Wave 2=32, Wave 3=34, etc.
-            const monstersPerPlayer = 30 + (this.difficulty - 1) * 2;
+            // Increase by 1.4 monsters per wave (70% of original 2): Wave 1=21, Wave 2=22.4, Wave 3=23.8, etc.
+            const monstersPerPlayer = 21 + (this.difficulty - 1) * 1.4;
             // Scale monsters by 50% per additional player (not 100%)
             this.monstersPerWave = monstersPerPlayer + (monstersPerPlayer * 0.5 * (playerCount - 1));
 

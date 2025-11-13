@@ -384,8 +384,12 @@ export default class HackerScene extends Phaser.Scene {
             console.log(`[GAME-TIMER-STARTED] Am I host? ${this.isHost}`);
             console.log(`[GAME-TIMER-STARTED] Game active? ${this.gameActive}`);
             console.log(`[GAME-TIMER-STARTED] Timer started? ${this.timerStarted}`);
+            console.log('[GAME-TIMER-STARTED] Full passwordsSelected Map:', Array.from(this.multiplayer.passwordsSelected.entries()));
 
             if (!this.isHost) {
+                // Mark that timer has started
+                this.timerStarted = true;
+
                 // Hide countdown display
                 const countdownDisplay = document.getElementById('hacker-countdown-display');
                 if (countdownDisplay) {
@@ -395,6 +399,7 @@ export default class HackerScene extends Phaser.Scene {
                 // Check if I have a password
                 const hasPassword = this.multiplayer.passwordsSelected.get(this.multiplayer.socket.id);
                 console.log(`[GAME-TIMER-STARTED] Do I have password? ${hasPassword}`);
+                console.log(`[GAME-TIMER-STARTED] Checking passwordsSelected Map for my ID (${this.multiplayer.socket.id})`);
 
                 // If I have a password, start generating questions NOW
                 if (hasPassword) {
@@ -477,6 +482,16 @@ export default class HackerScene extends Phaser.Scene {
         this.gameActive = true;
         this.timerStarted = false; // Track if timer has started
         this.passwordCountdown = 30; // 30 seconds for password selection
+
+        // CRITICAL: Sync existing passwordsSelected state from multiplayer manager
+        // This ensures we have passwords from players who selected before this scene was created
+        console.log('[STARTGAME] Syncing existing password state from multiplayer manager...');
+        console.log('[STARTGAME] passwordsSelected Map size:', this.multiplayer.passwordsSelected.size);
+        console.log('[STARTGAME] passwordsSelected entries:', Array.from(this.multiplayer.passwordsSelected.entries()));
+
+        // Check if I already have a password selected (might have selected in lobby before game started)
+        const myPasswordAlreadySelected = this.multiplayer.passwordsSelected.get(this.multiplayer.socket.id);
+        console.log(`[STARTGAME] Do I already have password? ${myPasswordAlreadySelected}`);
 
         // Show question panel (but disabled until password selected)
         if (!this.isHost) {
