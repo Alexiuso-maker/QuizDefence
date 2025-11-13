@@ -916,6 +916,72 @@ body {
     margin-bottom: 10px;
 }
 
+.host-room-code {
+    color: #00ff41;
+    text-align: center;
+    font-size: 18px;
+    margin: 0 0 15px 0;
+    font-family: 'Courier New', monospace;
+}
+
+.room-code-highlight {
+    font-size: 28px;
+    font-weight: bold;
+    color: #ffff00;
+    text-shadow: 0 0 15px #ffff00;
+    letter-spacing: 3px;
+    padding: 5px 15px;
+    background: rgba(255, 255, 0, 0.1);
+    border: 2px solid #ffff00;
+    border-radius: 8px;
+    display: inline-block;
+}
+
+/* Hacker Countdown Display */
+.hacker-countdown-display {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 1000;
+    background: rgba(0, 0, 0, 0.95);
+    border: 3px solid #00ff41;
+    border-radius: 15px;
+    padding: 40px 60px;
+    text-align: center;
+    box-shadow: 0 0 50px rgba(0, 255, 65, 0.7);
+}
+
+.countdown-content h2 {
+    color: #00ff41;
+    font-size: 32px;
+    margin: 0 0 20px 0;
+    text-shadow: 0 0 20px #00ff41;
+    font-family: 'Courier New', monospace;
+}
+
+.countdown-timer {
+    font-size: 96px;
+    font-weight: bold;
+    color: #ffff00;
+    text-shadow: 0 0 30px #ffff00;
+    margin: 20px 0;
+    font-family: 'Courier New', monospace;
+    animation: pulse 1s infinite;
+}
+
+.countdown-content p {
+    color: #00ff41;
+    font-size: 18px;
+    margin: 20px 0 0 0;
+    font-family: 'Courier New', monospace;
+}
+
+@keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+}
+
 .matrix-subtitle {
     color: #00ff41;
     text-align: center;

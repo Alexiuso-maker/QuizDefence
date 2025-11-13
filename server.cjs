@@ -34,12 +34,17 @@ io.on('connection', (socket) => {
     console.log('Player connected:', socket.id);
 
     // Create a new room
-    socket.on('create-room', (playerName) => {
+    socket.on('create-room', (data) => {
+        // Handle both old format (string) and new format (object)
+        const playerName = typeof data === 'string' ? data : data.playerName;
+        const gameMode = typeof data === 'object' ? (data.gameMode || 'quiz-defense') : 'quiz-defense';
+
         const roomCode = generateRoomCode();
-        
+
         const room = {
             code: roomCode,
             host: socket.id,
+            gameMode: gameMode,
             players: [{
                 id: socket.id,
                 name: playerName,
@@ -49,13 +54,13 @@ io.on('connection', (socket) => {
             gameStarted: false,
             gameState: null
         };
-        
+
         rooms.set(roomCode, room);
         socket.join(roomCode);
         socket.roomCode = roomCode;
-        
-        console.log(`Room created: ${roomCode} by ${playerName}`);
-        
+
+        console.log(`Room created: ${roomCode} by ${playerName} (mode: ${gameMode})`);
+
         socket.emit('room-created', { roomCode, room });
     });
 
@@ -63,17 +68,18 @@ io.on('connection', (socket) => {
     socket.on('join-room', (data) => {
         const { roomCode, playerName } = data;
         const room = rooms.get(roomCode);
-        
+
         if (!room) {
             socket.emit('room-error', 'Room not found');
             return;
         }
-        
-        if (room.gameStarted) {
+
+        // For Hacker mode, allow joining even if game has started (late joining)
+        if (room.gameStarted && room.gameMode !== 'the-hacker') {
             socket.emit('room-error', 'Game already started');
             return;
         }
-        
+
         // Add player to room
         room.players.push({
             id: socket.id,
@@ -81,14 +87,20 @@ io.on('connection', (socket) => {
             isHost: false,
             ready: false
         });
-        
+
         socket.join(roomCode);
         socket.roomCode = roomCode;
-        
-        console.log(`${playerName} joined room ${roomCode}`);
-        
+
+        console.log(`${playerName} joined room ${roomCode} ${room.gameStarted ? '(LATE JOIN)' : ''}`);
+
         // Notify everyone in room
         io.to(roomCode).emit('room-updated', room);
+
+        // If game already started (Hacker mode late join), immediately notify this player
+        if (room.gameStarted && room.gameMode === 'the-hacker') {
+            console.log(`Late joiner ${playerName} - sending game-starting event`);
+            socket.emit('game-starting', { gameMode: room.gameMode, lateJoin: true });
+        }
     });
 
     // Player ready

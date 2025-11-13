@@ -224,6 +224,12 @@ export default class HackerScene extends Phaser.Scene {
     }
 
     setupHostDashboard() {
+        // Display room code
+        const roomCodeDisplay = document.getElementById('host-dashboard-room-code');
+        if (roomCodeDisplay) {
+            roomCodeDisplay.textContent = this.multiplayer.roomCode;
+        }
+
         // Create Matrix effect for host
         const canvas = document.getElementById('host-matrix-canvas');
         if (!canvas) return;
@@ -268,6 +274,24 @@ export default class HackerScene extends Phaser.Scene {
     }
 
     setupSocketListeners() {
+        // Listen for room updates (new players joining)
+        this.multiplayer.socket.on('room-updated', (room) => {
+            console.log('Room updated, checking for new players');
+            // Add any new players to playerScores map
+            room.players.forEach(player => {
+                if (!this.playerScores.has(player.id)) {
+                    console.log(`Adding new player to scores: ${player.name}`);
+                    this.playerScores.set(player.id, {
+                        name: player.name,
+                        score: 0,
+                        password: null,
+                        hasShield: false,
+                        isHost: player.isHost || false
+                    });
+                }
+            });
+        });
+
         // Listen for password selection from players
         this.multiplayer.socket.on('password-selected', (data) => {
             const playerData = this.playerScores.get(data.playerId);
@@ -275,7 +299,15 @@ export default class HackerScene extends Phaser.Scene {
                 playerData.password = data.password;
                 console.log(`Password stored for ${data.playerName}: ${data.password}`);
             } else {
-                console.warn(`Player ${data.playerId} not found in playerScores map`);
+                console.warn(`Player ${data.playerId} not found in playerScores map - adding them now`);
+                // Add the player if they're not in the map (late joiner)
+                this.playerScores.set(data.playerId, {
+                    name: data.playerName,
+                    score: 0,
+                    password: data.password,
+                    hasShield: false,
+                    isHost: false
+                });
             }
 
             // If I'm the one who selected password
@@ -301,12 +333,23 @@ export default class HackerScene extends Phaser.Scene {
             const secondsRemaining = data.secondsRemaining;
             console.log(`Password countdown: ${secondsRemaining} seconds remaining`);
 
-            // Update UI for players without password
-            if (!this.isHost && !this.multiplayer.passwordsSelected.get(this.multiplayer.socket.id)) {
-                // Show countdown in password selection area
-                const passwordHint = document.querySelector('.password-hint');
-                if (passwordHint) {
-                    passwordHint.textContent = `Vel eit passord - du har ${secondsRemaining} sekund${secondsRemaining !== 1 ? 'er' : ''} att! Dette treng du for å forsvare deg mot hack!`;
+            if (!this.isHost) {
+                // Update countdown display
+                const countdownDisplay = document.getElementById('hacker-countdown-display');
+                const countdownTimer = document.getElementById('hacker-countdown-timer');
+
+                if (countdownDisplay && countdownTimer) {
+                    countdownDisplay.style.display = 'flex';
+                    countdownTimer.textContent = secondsRemaining;
+                }
+
+                // Update UI for players without password
+                if (!this.multiplayer.passwordsSelected.get(this.multiplayer.socket.id)) {
+                    // Show countdown in password selection area
+                    const passwordHint = document.querySelector('.password-hint');
+                    if (passwordHint) {
+                        passwordHint.textContent = `Vel eit passord - du har ${secondsRemaining} sekund${secondsRemaining !== 1 ? 'er' : ''} att! Dette treng du for å forsvare deg mot hack!`;
+                    }
                 }
             }
         });
@@ -316,6 +359,12 @@ export default class HackerScene extends Phaser.Scene {
             console.log('Game timer has started! 30-second countdown is over.');
 
             if (!this.isHost) {
+                // Hide countdown display
+                const countdownDisplay = document.getElementById('hacker-countdown-display');
+                if (countdownDisplay) {
+                    countdownDisplay.style.display = 'none';
+                }
+
                 // If I have a password, start generating questions NOW
                 if (this.multiplayer.passwordsSelected.get(this.multiplayer.socket.id)) {
                     console.log('I have a password - generating first question!');

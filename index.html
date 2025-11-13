@@ -224,6 +224,15 @@
             <!-- Active powerups will show here -->
         </div>
 
+        <!-- Countdown Display -->
+        <div id="hacker-countdown-display" class="hacker-countdown-display" style="display: none;">
+            <div class="countdown-content">
+                <h2>GAME STARTING IN</h2>
+                <div class="countdown-timer" id="hacker-countdown-timer">30</div>
+                <p>Vel passord for å spele!</p>
+            </div>
+        </div>
+
         <!-- Question Panel -->
         <div id="hacker-question-panel" class="hacker-question-panel">
             <div class="terminal-header">
@@ -243,6 +252,7 @@
 
         <div class="host-dashboard">
             <h1 class="matrix-title">HOST DASHBOARD</h1>
+            <p class="host-room-code">ROM KODE: <span id="host-dashboard-room-code" class="room-code-highlight">0000</span></p>
 
             <div class="dashboard-controls">
                 <button id="host-pause-btn" class="host-btn">⏸ Pause</button>
