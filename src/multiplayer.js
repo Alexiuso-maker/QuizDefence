@@ -500,9 +500,11 @@ class MultiplayerManager {
                 // Show confirmation briefly, then hide and start game
                 document.getElementById('password-selected-msg').style.display = 'block';
 
-                // Wait a moment then hide password selection and start game
+                // Wait a moment then hide waiting room and start game
                 setTimeout(() => {
                     passwordSelection.style.display = 'none';
+                    document.getElementById('hacker-waiting-room').style.display = 'none';
+                    document.getElementById('hacker-game-container').style.display = 'flex';
                     this.startHackerScene();
                 }, 500);
             };
@@ -573,23 +575,23 @@ class MultiplayerManager {
     startHackerGameClient() {
         console.log('startHackerGameClient - isHost:', this.isHost, 'hasPassword:', this.passwordsSelected.get(this.socket.id));
 
-        // Hide waiting room
-        document.getElementById('hacker-waiting-room').style.display = 'none';
-
         if (this.isHost) {
             // Host goes straight to dashboard (no password needed)
+            document.getElementById('hacker-waiting-room').style.display = 'none';
             document.getElementById('hacker-host-dashboard').style.display = 'flex';
             this.startHackerScene();
         } else {
             // Players must select password first
             if (!this.passwordsSelected.get(this.socket.id)) {
                 console.log('Player needs to select password - showing modal');
+                // Keep waiting room visible for password selection
                 this.showPasswordSelectionModal();
                 return;
             }
 
-            // After password selected, show game container
+            // After password selected, hide waiting room and show game container
             console.log('Player has password - showing game');
+            document.getElementById('hacker-waiting-room').style.display = 'none';
             document.getElementById('hacker-game-container').style.display = 'flex';
             this.startHackerScene();
         }
@@ -598,23 +600,9 @@ class MultiplayerManager {
     showPasswordSelectionModal() {
         console.log('showPasswordSelectionModal called');
 
-        // Show game container with password selection overlay
-        document.getElementById('hacker-game-container').style.display = 'flex';
-
-        // Show password selection overlay
+        // Keep waiting room visible, just show password selection
         const passwordSelection = document.getElementById('password-selection');
         passwordSelection.style.display = 'block';
-
-        // Make it look like a modal overlay
-        passwordSelection.style.position = 'fixed';
-        passwordSelection.style.top = '50%';
-        passwordSelection.style.left = '50%';
-        passwordSelection.style.transform = 'translate(-50%, -50%)';
-        passwordSelection.style.zIndex = '10000';
-        passwordSelection.style.background = 'rgba(0, 0, 0, 0.95)';
-        passwordSelection.style.padding = '30px';
-        passwordSelection.style.borderRadius = '15px';
-        passwordSelection.style.border = '2px solid #00ff41';
 
         console.log('Password selection display:', passwordSelection.style.display);
 
