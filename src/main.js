@@ -16,7 +16,10 @@ document.addEventListener('DOMContentLoaded', () => {
     multiplayerManager = new MultiplayerManager();
     multiplayerManager.connect();
 
-    setupGameModeSelection(); // Setup game mode selection
+    // Default game mode
+    multiplayerManager.gameMode = 'quiz-defense';
+
+    setupLobbyControls(); // Setup lobby with integrated game mode selection
     setupPanelToggles(); // Setup panel toggle buttons
 
     // Get references to lobby buttons
@@ -80,21 +83,25 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 });
 
-function setupGameModeSelection() {
-    const quizDefenseCard = document.getElementById('select-quiz-defense');
-    const hackerCard = document.getElementById('select-hacker');
+function setupLobbyControls() {
+    // Setup game mode selection buttons
+    const modeButtons = document.querySelectorAll('.mode-select-btn');
 
-    quizDefenseCard.onclick = () => {
-        multiplayerManager.gameMode = 'quiz-defense';
-        document.getElementById('game-mode-screen').style.display = 'none';
-        document.getElementById('lobby-screen').style.display = 'flex';
-    };
+    modeButtons.forEach(button => {
+        button.addEventListener('click', () => {
+            // Remove selected class from all buttons
+            modeButtons.forEach(btn => btn.classList.remove('selected'));
 
-    hackerCard.onclick = () => {
-        multiplayerManager.gameMode = 'the-hacker';
-        document.getElementById('game-mode-screen').style.display = 'none';
-        document.getElementById('lobby-screen').style.display = 'flex';
-    };
+            // Add selected class to clicked button
+            button.classList.add('selected');
+
+            // Update game mode
+            const mode = button.dataset.mode;
+            multiplayerManager.gameMode = mode;
+
+            console.log('Game mode selected:', mode);
+        });
+    });
 }
 
 function setupPanelToggles() {

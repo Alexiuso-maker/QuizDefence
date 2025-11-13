@@ -7,32 +7,8 @@
     <link rel="stylesheet" href="/src/style.css">
 </head>
 <body>
-    <!-- Game Mode Selection Screen -->
-    <div id="game-mode-screen">
-        <div class="mode-container">
-            <h1>🎮 Vel Spelmodus</h1>
-            <p class="subtitle">Vel kva spel du vil spele</p>
-
-            <div class="mode-options">
-                <div class="mode-card" id="select-quiz-defense">
-                    <div class="mode-icon">🏰</div>
-                    <h2>Quiz Defense</h2>
-                    <p>Samarbeidsspel der de forsvarer basen mot UFO-er ved å svare på mattespørsmål</p>
-                    <button class="mode-btn">Vel dette spelet</button>
-                </div>
-
-                <div class="mode-card" id="select-hacker">
-                    <div class="mode-icon">💻</div>
-                    <h2>The Hacker</h2>
-                    <p>Konkurransespel der du hackar motstandarar og samlar poeng ved å svare rett</p>
-                    <button class="mode-btn">Vel dette spelet</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Lobby Screen -->
-    <div id="lobby-screen" style="display: none;">
+    <!-- Lobby Screen (with integrated game mode selection) -->
+    <div id="lobby-screen">
         <div class="lobby-container">
             <h1>🎮 Mattespel</h1>
             <p class="subtitle">Samarbeidsspel i matte</p>
@@ -40,6 +16,22 @@
             <div class="lobby-options">
                 <div class="lobby-card">
                     <h2>Lag rom</h2>
+
+                    <!-- Compact game mode selector (host only) -->
+                    <div class="game-mode-selector">
+                        <label class="mode-label">Vel spel:</label>
+                        <div class="mode-buttons">
+                            <button class="mode-select-btn selected" data-mode="quiz-defense">
+                                <span class="mode-emoji">🏰</span>
+                                <span class="mode-name">Quiz Defense</span>
+                            </button>
+                            <button class="mode-select-btn" data-mode="the-hacker">
+                                <span class="mode-emoji">💻</span>
+                                <span class="mode-name">The Hacker</span>
+                            </button>
+                        </div>
+                    </div>
+
                     <input type="text" id="host-name" placeholder="Namnet ditt..." maxlength="20">
                     <button id="create-room-btn" class="lobby-btn primary">Lag rom</button>
                 </div>

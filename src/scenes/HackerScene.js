@@ -15,43 +15,87 @@ const PASSWORD_POOL = [
 function generateWrongAlternatives(correctAnswer, questionType) {
     const alternatives = new Set();
 
-    // Parse correct answer
-    const correctNum = parseFloat(correctAnswer.toString().replace(',', '.'));
+    // Special handling for decimal comparison questions
+    if (questionType === 'decimalComparison') {
+        // The answer is a decimal string like "6,35"
+        // Generate similar-looking decimal numbers
+        const parts = correctAnswer.split(',');
+        if (parts.length === 2) {
+            const whole = parseInt(parts[0]);
+            const decimal = parts[1];
 
-    // Generate wrong answers
-    if (!isNaN(correctNum)) {
-        // Numeric answer - generate nearby wrong answers
-        const variations = [-3, -2, -1, 1, 2, 3, -4, 4];
-        const shuffled = Phaser.Utils.Array.Shuffle([...variations]);
+            // Generate alternatives
+            alternatives.add(`${whole},${decimal.length === 1 ? decimal + '0' : decimal.substring(0, 1)}`);
+            alternatives.add(`${whole + 1},${decimal}`);
+            alternatives.add(`${whole - 1 >= 0 ? whole - 1 : whole + 2},${decimal}`);
 
-        for (let variation of shuffled) {
-            if (alternatives.size >= 3) break;
-            const wrongAnswer = correctNum + variation;
-            if (wrongAnswer !== correctNum && wrongAnswer >= 0) {
-                // Format back to Norwegian comma format if it was decimal
-                const formatted = correctAnswer.includes(',')
-                    ? wrongAnswer.toString().replace('.', ',')
-                    : wrongAnswer.toString();
-                alternatives.add(formatted);
+            // Remove correct answer if accidentally added
+            alternatives.delete(correctAnswer);
+
+            // Add more if needed
+            while (alternatives.size < 3) {
+                const randWhole = Phaser.Math.Between(Math.max(0, whole - 2), whole + 2);
+                const randDec = Phaser.Math.Between(0, 99).toString().padStart(decimal.length, '0');
+                const alt = `${randWhole},${randDec}`;
+                if (alt !== correctAnswer) {
+                    alternatives.add(alt);
+                }
             }
-        }
-
-        // If we don't have enough, add more variations
-        while (alternatives.size < 3) {
-            const randomVariation = Phaser.Math.Between(-10, 10);
-            const wrongAnswer = correctNum + randomVariation;
-            if (wrongAnswer !== correctNum && wrongAnswer >= 0) {
-                const formatted = correctAnswer.includes(',')
-                    ? wrongAnswer.toString().replace('.', ',')
-                    : wrongAnswer.toString();
-                alternatives.add(formatted);
-            }
+        } else {
+            // Fallback for whole numbers in comparison
+            const num = parseInt(correctAnswer);
+            alternatives.add((num - 1).toString());
+            alternatives.add((num + 1).toString());
+            alternatives.add((num + 2).toString());
         }
     } else {
-        // Non-numeric answer (shouldn't happen, but just in case)
-        alternatives.add('???');
-        alternatives.add('Error');
-        alternatives.add('N/A');
+        // Parse correct answer for numeric questions
+        const correctNum = parseFloat(correctAnswer.toString().replace(',', '.'));
+
+        if (!isNaN(correctNum)) {
+            // Numeric answer - generate nearby wrong answers
+            const isDecimal = correctAnswer.includes(',');
+            const variations = [-3, -2, -1, 1, 2, 3, -4, 4];
+            const shuffled = Phaser.Utils.Array.Shuffle([...variations]);
+
+            for (let variation of shuffled) {
+                if (alternatives.size >= 3) break;
+                const wrongAnswer = correctNum + variation;
+                if (wrongAnswer !== correctNum && wrongAnswer >= 0) {
+                    // Format back to Norwegian comma format if it was decimal
+                    let formatted;
+                    if (isDecimal) {
+                        // Preserve decimal places
+                        const decimalPlaces = correctAnswer.split(',')[1]?.length || 1;
+                        formatted = wrongAnswer.toFixed(decimalPlaces).replace('.', ',');
+                    } else {
+                        formatted = Math.round(wrongAnswer).toString();
+                    }
+                    alternatives.add(formatted);
+                }
+            }
+
+            // If we don't have enough, add more variations
+            while (alternatives.size < 3) {
+                const randomVariation = Phaser.Math.Between(-10, 10);
+                const wrongAnswer = correctNum + randomVariation;
+                if (wrongAnswer !== correctNum && wrongAnswer >= 0) {
+                    let formatted;
+                    if (isDecimal) {
+                        const decimalPlaces = correctAnswer.split(',')[1]?.length || 1;
+                        formatted = wrongAnswer.toFixed(decimalPlaces).replace('.', ',');
+                    } else {
+                        formatted = Math.round(wrongAnswer).toString();
+                    }
+                    alternatives.add(formatted);
+                }
+            }
+        } else {
+            // Non-numeric answer fallback
+            alternatives.add('???');
+            alternatives.add('Error');
+            alternatives.add('N/A');
+        }
     }
 
     return Array.from(alternatives).slice(0, 3);
@@ -78,19 +122,24 @@ export default class HackerScene extends Phaser.Scene {
         this.playerPassword = null;
 
         // Player data (for host dashboard or all players)
-        this.playerScores = new Map(); // playerId -> {name, score, password}
+        this.playerScores = new Map(); // playerId -> {name, score, password, hasShield}
         this.hackLog = []; // Array of hack events
 
         // Powerups
         this.hasShield = false;
         this.cryptoMinerQuestionsLeft = 0;
 
+        // Intervals to clean up
+        this.matrixInterval = null;
+        this.timerInterval = null;
+
         // Initialize player scores
         this.multiplayer.players.forEach(player => {
             this.playerScores.set(player.id, {
                 name: player.name,
                 score: 0,
-                password: null
+                password: null,
+                hasShield: false
             });
         });
 
@@ -137,18 +186,24 @@ export default class HackerScene extends Phaser.Scene {
             }
         };
 
-        setInterval(drawMatrix, 50);
+        this.matrixInterval = setInterval(drawMatrix, 50);
     }
 
     setupPlayerUI() {
         // Set player name
-        document.getElementById('hacker-player-name').textContent = this.multiplayer.playerName;
+        const nameElement = document.getElementById('hacker-player-name');
+        if (nameElement) {
+            nameElement.textContent = this.multiplayer.playerName;
+        }
 
         // Update score display
         this.updateScoreDisplay();
 
         // Hide question panel initially
-        document.getElementById('hacker-question-panel').style.display = 'none';
+        const questionPanel = document.getElementById('hacker-question-panel');
+        if (questionPanel) {
+            questionPanel.style.display = 'none';
+        }
     }
 
     setupHostDashboard() {
@@ -181,15 +236,18 @@ export default class HackerScene extends Phaser.Scene {
             }
         };
 
-        setInterval(drawMatrix, 50);
+        this.matrixInterval = setInterval(drawMatrix, 50);
 
         // Update dashboard
         this.updateHostDashboard();
 
         // Set up controls
-        document.getElementById('host-end-btn').onclick = () => {
-            this.endGame();
-        };
+        const endBtn = document.getElementById('host-end-btn');
+        if (endBtn) {
+            endBtn.onclick = () => {
+                this.endGame();
+            };
+        }
     }
 
     setupSocketListeners() {
@@ -340,6 +398,11 @@ export default class HackerScene extends Phaser.Scene {
         const optionsContainer = document.getElementById('hacker-answer-options');
         const feedbackDiv = document.getElementById('hacker-feedback');
 
+        if (!questionText || !optionsContainer || !feedbackDiv) {
+            console.error('Question display elements not found!');
+            return;
+        }
+
         questionText.textContent = this.currentQuestion.question;
         feedbackDiv.textContent = '';
         optionsContainer.innerHTML = '';
@@ -441,7 +504,8 @@ export default class HackerScene extends Phaser.Scene {
 
         if (sortedPlayers.length === 0) {
             // No one to hack
-            this.generateNewQuestion();
+            this.showRewardModal('NO TARGETS', 'No other players to hack!', '#ffff00');
+            setTimeout(() => this.generateNewQuestion(), 2000);
             return;
         }
 
@@ -470,14 +534,21 @@ export default class HackerScene extends Phaser.Scene {
         const targetNameSpan = document.getElementById('hack-target-name');
         const passwordOptions = document.getElementById('hack-password-options');
 
+        if (!modal || !targetNameSpan || !passwordOptions) {
+            console.error('Hack modal elements not found!');
+            this.generateNewQuestion();
+            return;
+        }
+
         targetNameSpan.textContent = `TARGET: ${targetData.name.toUpperCase()}`;
         passwordOptions.innerHTML = '';
 
         // Get target's password and 2 random others
         const targetPassword = targetData.password;
         if (!targetPassword) {
-            console.error('Target has no password!');
-            this.generateNewQuestion();
+            console.warn('Target has no password yet - cannot hack!');
+            this.showRewardModal('HACK FAILED', `${targetData.name} hasn't set password yet!`, '#ff0000');
+            setTimeout(() => this.generateNewQuestion(), 2000);
             return;
         }
 
@@ -502,7 +573,7 @@ export default class HackerScene extends Phaser.Scene {
     }
 
     attemptHack(targetId, targetData, success) {
-        if (success && !targetData.shield) {
+        if (success && !targetData.hasShield) {
             // Calculate stolen points
             const stolenPoints = Math.floor(targetData.score * 0.3);
             const newVictimScore = targetData.score - stolenPoints;
@@ -523,12 +594,15 @@ export default class HackerScene extends Phaser.Scene {
             // Show success notification
             this.showRewardModal('HACK SUCCESSFUL!', `Stole ${stolenPoints} points from ${targetData.name}!`, '#00ff00');
 
-        } else if (targetData.shield) {
+        } else if (targetData.hasShield) {
             // Blocked by shield
             this.showRewardModal('BLOCKED!', `${targetData.name} has a shield!`, '#ff0000');
 
-            // Remove target's shield
-            targetData.shield = false;
+            // Remove target's shield via socket event
+            this.multiplayer.socket.emit('remove-shield', {
+                roomCode: this.multiplayer.roomCode,
+                playerId: targetId
+            });
 
         } else {
             // Wrong password
@@ -581,8 +655,21 @@ export default class HackerScene extends Phaser.Scene {
     }
 
     triggerShield() {
-        // Activate shield
+        // Activate shield for current player
         this.hasShield = true;
+
+        // Update player data in map
+        const myData = this.playerScores.get(this.multiplayer.socket.id);
+        if (myData) {
+            myData.hasShield = true;
+        }
+
+        // Notify server about shield activation
+        this.multiplayer.socket.emit('activate-shield', {
+            roomCode: this.multiplayer.roomCode,
+            playerId: this.multiplayer.socket.id
+        });
+
         this.updateStatusIcons();
 
         // Show reward modal
@@ -717,7 +804,9 @@ export default class HackerScene extends Phaser.Scene {
     }
 
     endGame() {
-        clearInterval(this.timerInterval);
+        // Clear all intervals
+        if (this.timerInterval) clearInterval(this.timerInterval);
+        if (this.matrixInterval) clearInterval(this.matrixInterval);
         this.gameActive = false;
 
         // Show game over modal

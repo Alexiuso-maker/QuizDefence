@@ -26,13 +26,19 @@ class MultiplayerManager {
         this.socket.on('room-created', (data) => {
             this.roomCode = data.roomCode;
             this.isHost = true;
+            // Game mode is already set by host
             this.showWaitingRoom(data.room);
         });
 
         // Room updated
         this.socket.on('room-updated', (room) => {
             this.players = room.players;
-            
+
+            // If joining player, inherit game mode from room
+            if (!this.isHost && room.gameMode) {
+                this.gameMode = room.gameMode;
+            }
+
             const isPlayerInRoom = room.players.some(p => p.id === this.socket.id);
             if (isPlayerInRoom && document.getElementById('lobby-screen').style.display !== 'none') {
                 this.showWaitingRoom(room);
@@ -97,7 +103,10 @@ class MultiplayerManager {
 
     createRoom(playerName) {
         this.playerName = playerName;
-        this.socket.emit('create-room', playerName);
+        this.socket.emit('create-room', {
+            playerName: playerName,
+            gameMode: this.gameMode
+        });
     }
 
     joinRoom(roomCode, playerName) {
@@ -122,6 +131,12 @@ class MultiplayerManager {
             document.getElementById('waiting-room').style.display = 'flex';
             document.getElementById('display-room-code').textContent = this.roomCode;
 
+            // Update subtitle to show game mode
+            const subtitle = document.querySelector('#waiting-room .waiting-subtitle');
+            if (subtitle) {
+                subtitle.textContent = '🏰 Quiz Defense - Ventar på spelarar...';
+            }
+
             if (this.isHost) {
                 document.getElementById('start-game-btn').style.display = 'block';
                 document.getElementById('question-type-selector').style.display = 'block';
@@ -135,6 +150,12 @@ class MultiplayerManager {
     showHackerWaitingRoom(room) {
         document.getElementById('hacker-waiting-room').style.display = 'flex';
         document.getElementById('hacker-room-code').textContent = this.roomCode;
+
+        // Update subtitle to show game mode
+        const subtitle = document.querySelector('#hacker-waiting-room .matrix-subtitle');
+        if (subtitle) {
+            subtitle.innerHTML = `💻 THE HACKER - Rom: <span id="hacker-room-code">${this.roomCode}</span>`;
+        }
 
         // Update players list
         this.updateHackerPlayersList(room);
@@ -154,6 +175,13 @@ class MultiplayerManager {
             // Setup start game button
             document.getElementById('hacker-start-game-btn').onclick = () => {
                 this.startHackerGame();
+            };
+
+            // Setup question selector button
+            document.getElementById('hacker-question-selector-btn').onclick = () => {
+                // Reuse the same selector modal from Quiz Defense
+                document.getElementById('question-type-selector').style.display = 'block';
+                this.setupQuestionTypeSelector();
             };
         }
 
