@@ -830,6 +830,60 @@ export default class GameScene extends Phaser.Scene {
                 this.showUpgradeModal();
             });
         });
+
+        // Listen for countdown end (synchronized from host)
+        this.multiplayer.socket.on('countdown-ended', () => {
+            if (this.isHost) return; // Host already handled this
+
+            console.log('Countdown ended (synchronized from host)');
+
+            // End countdown on this client
+            if (this.countdownInterval) {
+                clearInterval(this.countdownInterval);
+            }
+
+            // Close modal if still open and auto-select upgrade
+            const modal = document.getElementById('upgrade-modal');
+            if (modal.style.display === 'flex' && this.availableUpgrades) {
+                const selectableUpgrades = this.availableUpgrades.filter(upgradeId => {
+                    const upgrade = UPGRADES[upgradeId];
+                    return this.myUpgrades[upgradeId] < upgrade.maxLevel;
+                });
+
+                if (selectableUpgrades.length > 0) {
+                    const randomUpgrade = Phaser.Utils.Array.GetRandom(selectableUpgrades);
+                    console.log(`Time's up! Auto-selecting: ${UPGRADES[randomUpgrade].name}`);
+                    this.myUpgrades[randomUpgrade]++;
+
+                    // Apply immediate effects
+                    if (randomUpgrade === 'baseHealth') {
+                        const bonus = UPGRADES.baseHealth.getBonus(this.myUpgrades.baseHealth);
+                        const newMaxHealth = BASE_HEALTH + bonus;
+                        const healthDiff = newMaxHealth - (BASE_HEALTH + UPGRADES.baseHealth.getBonus(this.myUpgrades.baseHealth - 1));
+                        this.baseHealth = Math.min(this.baseHealth + healthDiff, newMaxHealth);
+                        this.healthText.setText(`Base: ${this.baseHealth}`);
+                        this.applyBaseDamageEffects();
+                    }
+
+                    if (randomUpgrade === 'maxAmmo') {
+                        const newMax = UPGRADES.maxAmmo.getBonus(this.myUpgrades.maxAmmo);
+                        document.querySelector('.ammo-max').textContent = `/${newMax}`;
+                    }
+                }
+            }
+
+            modal.style.display = 'none';
+            document.getElementById('wave-countdown-display').style.display = 'none';
+            this.isInCountdown = false;
+
+            // Apply starting ammo bonus
+            const startingAmmoBonus = UPGRADES.startingAmmo.getBonus(this.myUpgrades.startingAmmo);
+            if (startingAmmoBonus > 0) {
+                this.addAmmo(startingAmmoBonus);
+            }
+
+            console.log('Wave starting! Prep time over (synchronized).');
+        });
     }
 
     initializePlayerStats() {
@@ -1032,9 +1086,8 @@ export default class GameScene extends Phaser.Scene {
         // Store available upgrades for potential auto-select
         this.availableUpgrades = selectedUpgrades;
 
-        // Start countdown (30 seconds base, +2 seconds per prepTime upgrade)
-        const prepTime = 30 + (this.myUpgrades.prepTime * 2);
-        this.startCountdown(prepTime);
+        // Start countdown (60 seconds for upgrade selection)
+        this.startCountdown(60);
     }
 
     selectUpgrade(upgradeId) {
@@ -1064,9 +1117,13 @@ export default class GameScene extends Phaser.Scene {
         document.getElementById('upgrade-modal').style.display = 'none';
 
         // Show wave countdown display so player knows when wave starts
-        document.getElementById('wave-countdown-display').style.display = 'block';
+        const waveCountdown = document.getElementById('wave-countdown-display');
+        if (waveCountdown) {
+            waveCountdown.style.display = 'block';
+        }
 
         console.log('Upgrade selected! You can now answer questions for ammo while waiting for the wave to start.');
+        console.log(`Time remaining: ${this.countdownTime} seconds`);
     }
 
     startCountdown(seconds) {
@@ -1093,6 +1150,13 @@ export default class GameScene extends Phaser.Scene {
     }
 
     endCountdown() {
+        // Host broadcasts countdown end to synchronize all players
+        if (this.isHost) {
+            this.multiplayer.socket.emit('countdown-ended', {
+                roomCode: this.multiplayer.roomCode
+            });
+        }
+
         // Auto-select a random upgrade if modal is still open (no selection made)
         const modal = document.getElementById('upgrade-modal');
         if (modal.style.display === 'flex' && this.availableUpgrades) {

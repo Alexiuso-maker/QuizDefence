@@ -322,8 +322,8 @@ export default class HackerScene extends Phaser.Scene {
 
     startGame(duration) {
         this.gameDuration = duration * 60 * 1000; // Convert minutes to milliseconds
-        this.gameStartTime = Date.now();
         this.gameActive = true;
+        this.timerStarted = false; // Track if timer has started
 
         // Show question panel
         if (!this.isHost) {
@@ -331,10 +331,41 @@ export default class HackerScene extends Phaser.Scene {
             this.generateNewQuestion();
         }
 
-        // Start timer
+        // For host: Wait for all players to select passwords before starting timer
+        if (this.isHost) {
+            console.log('Waiting for players to select passwords...');
+            this.checkIfAllPasswordsSelectedAndStartTimer();
+        } else {
+            // For players: Timer will start after they select password
+            console.log('Select your password to start the game timer!');
+        }
+
+        console.log(`Game initialized! Duration: ${duration} minutes`);
+    }
+
+    checkIfAllPasswordsSelectedAndStartTimer() {
+        // Get all non-host players
+        const nonHostPlayers = this.multiplayer.players.filter(p => !p.isHost);
+
+        // Check if all non-host players have selected passwords
+        const allSelected = nonHostPlayers.every(p =>
+            this.multiplayer.passwordsSelected.get(p.id)
+        );
+
+        if (allSelected && !this.timerStarted) {
+            console.log('All players selected passwords! Starting timer...');
+            this.startTimerNow();
+        }
+    }
+
+    startTimerNow() {
+        if (this.timerStarted) return;
+
+        this.timerStarted = true;
+        this.gameStartTime = Date.now();
         this.startTimer();
 
-        console.log(`Game started! Duration: ${duration} minutes`);
+        console.log('Timer started!');
     }
 
     startTimer() {

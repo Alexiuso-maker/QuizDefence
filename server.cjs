@@ -176,15 +176,26 @@ io.on('connection', (socket) => {
         }
     });
 
-    // Wave completed (boss killed) - NEW
+    // Wave completed (boss killed)
     socket.on('wave-completed', (data) => {
-        const { roomCode, newWave, newSpawnInterval, newMonstersPerWave } = data;
+        const { roomCode, newWave, newSpawnInterval, newMonstersPerWave, newBaseSpawnInterval, newMinSpawnInterval } = data;
         if (roomCode) {
             socket.to(roomCode).emit('wave-completed', {
                 newWave,
                 newSpawnInterval,
-                newMonstersPerWave
+                newMonstersPerWave,
+                newBaseSpawnInterval,
+                newMinSpawnInterval
             });
+        }
+    });
+
+    // Countdown ended (upgrade phase over)
+    socket.on('countdown-ended', (data) => {
+        const { roomCode } = data;
+        if (roomCode) {
+            // Broadcast to all other players in room
+            socket.to(roomCode).emit('countdown-ended');
         }
     });
 
@@ -196,6 +207,66 @@ io.on('connection', (socket) => {
             socket.to(roomCode).emit('question-types-updated', {
                 questionTypes
             });
+        }
+    });
+
+    // Hacker game: Update player score
+    socket.on('update-player-score', (data) => {
+        const roomCode = socket.roomCode;
+        if (roomCode) {
+            // Broadcast to all players including host
+            io.to(roomCode).emit('player-score-updated', data);
+        }
+    });
+
+    // Hacker game: Select password (player action)
+    socket.on('select-password', (data) => {
+        const roomCode = socket.roomCode || data.roomCode;
+        if (roomCode) {
+            // Broadcast to all players
+            io.to(roomCode).emit('password-selected', {
+                playerId: data.playerId,
+                playerName: data.playerName,
+                password: data.password
+            });
+        }
+    });
+
+    // Hacker game: Password selected (legacy event, kept for compatibility)
+    socket.on('password-selected', (data) => {
+        const roomCode = socket.roomCode;
+        if (roomCode) {
+            // Broadcast to all players
+            io.to(roomCode).emit('password-selected', data);
+        }
+    });
+
+    // Hacker game: Hack attempt
+    socket.on('hack-attempt', (data) => {
+        const { roomCode, targetId, hackerId, hackerName, password } = data;
+        if (roomCode) {
+            // Send to target player
+            io.to(targetId).emit('hack-attempt', {
+                hackerId,
+                hackerName,
+                password
+            });
+        }
+    });
+
+    // Hacker game: Remove shield
+    socket.on('remove-shield', (data) => {
+        const roomCode = socket.roomCode;
+        if (roomCode) {
+            io.to(roomCode).emit('remove-shield', data);
+        }
+    });
+
+    // Hacker game: Activate shield
+    socket.on('activate-shield', (data) => {
+        const roomCode = socket.roomCode;
+        if (roomCode) {
+            io.to(roomCode).emit('activate-shield', data);
         }
     });
 

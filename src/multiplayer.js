@@ -217,14 +217,31 @@ class MultiplayerManager {
                 this.passwordsSelected.set(data.playerId, true);
                 console.log('Password selected by:', data.playerName);
 
-                // Update waiting room display
+                // Update waiting room display (if still in waiting room)
                 if (document.getElementById('hacker-waiting-room').style.display !== 'none') {
                     const room = { players: this.players };
                     this.updateHackerPlayersList(room);
                 }
 
-                // Check if all players have selected
-                this.checkAllPasswordsSelected();
+                // If game has started, check if we should start the timer
+                if (this.hackerScene && this.hackerScene.gameActive) {
+                    console.log('Player selected password during game');
+
+                    // If this is the player's own password selection, start their timer
+                    if (data.playerId === this.socket.id && !this.isHost) {
+                        this.hackerScene.startTimerNow();
+                    }
+
+                    // If host, check if all players have selected and start timer
+                    if (this.isHost) {
+                        this.hackerScene.checkIfAllPasswordsSelectedAndStartTimer();
+                    }
+                }
+
+                // Old auto-start logic (only relevant if still in waiting room)
+                if (document.getElementById('hacker-waiting-room').style.display !== 'none') {
+                    this.checkAllPasswordsSelected();
+                }
             }
         });
 
@@ -355,15 +372,8 @@ class MultiplayerManager {
         // Update players list
         this.updateHackerPlayersList(room);
 
-        // Start auto-start timer for host (1 minute)
-        if (this.isHost && !this.autoStartTimer) {
-            this.startAutoStartTimer();
-        }
-
-        // For non-host players without password, show reminder
-        if (!this.isHost && !this.passwordsSelected.get(this.socket.id)) {
-            this.showPasswordReminder();
-        }
+        // Note: Password selection moved to after game starts
+        // No auto-start timer in waiting room
 
         // Show host settings
         if (this.isHost) {
@@ -399,10 +409,8 @@ class MultiplayerManager {
                 }
                 this.setupQuestionTypeSelector();
             };
-        } else {
-            // Show password selection for non-host players only
-            this.setupPasswordSelection();
         }
+        // Note: Password selection moved to after game starts
 
         // Leave button
         document.getElementById('hacker-leave-room-btn').onclick = () => {
@@ -487,8 +495,14 @@ class MultiplayerManager {
                     password: password
                 });
 
-                // Show confirmation
+                // Show confirmation briefly, then hide and start game
                 document.getElementById('password-selected-msg').style.display = 'block';
+
+                // Wait a moment then hide password selection and start game
+                setTimeout(() => {
+                    passwordSelection.style.display = 'none';
+                    this.startHackerScene();
+                }, 500);
             };
             passwordOptions.appendChild(btn);
         });
@@ -555,24 +569,44 @@ class MultiplayerManager {
     }
 
     startHackerGameClient() {
-        // Check if non-host player has selected password
-        if (!this.isHost && !this.passwordsSelected.get(this.socket.id)) {
-            // Player hasn't selected password - show blocking message
-            this.showPasswordRequiredMessage();
-            return;
-        }
-
         // Hide waiting room
         document.getElementById('hacker-waiting-room').style.display = 'none';
 
         if (this.isHost) {
             // Show host dashboard
             document.getElementById('hacker-host-dashboard').style.display = 'flex';
-        } else {
-            // Show game container for players
-            document.getElementById('hacker-game-container').style.display = 'flex';
-        }
 
+            // Dispatch event to start Hacker Scene for host (without timer starting yet)
+            this.startHackerScene();
+        } else {
+            // For non-host players: Show password selection first
+            if (!this.passwordsSelected.get(this.socket.id)) {
+                // Show password selection modal
+                this.showPasswordSelectionModal();
+                return;
+            }
+
+            // If password already selected, proceed to game
+            document.getElementById('hacker-game-container').style.display = 'flex';
+            this.startHackerScene();
+        }
+    }
+
+    showPasswordSelectionModal() {
+        // Show game container with password selection overlay
+        document.getElementById('hacker-game-container').style.display = 'flex';
+
+        // Show password selection in the hacker waiting room area
+        const passwordSelection = document.getElementById('password-selection');
+        passwordSelection.style.display = 'block';
+
+        // Setup password selection if not already done
+        if (document.getElementById('password-options').children.length === 0) {
+            this.setupPasswordSelection();
+        }
+    }
+
+    startHackerScene() {
         // Dispatch event to start Hacker Scene
         window.dispatchEvent(new CustomEvent('start-hacker-game', {
             detail: {
