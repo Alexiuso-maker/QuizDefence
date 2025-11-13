@@ -835,8 +835,10 @@ class MultiplayerManager {
                     checkbox.type = 'checkbox';
                     checkbox.id = `qt-${key}`;
                     checkbox.checked = false; // Start unchecked
-                    checkbox.addEventListener('change', (e) => {
-                        if (e.target.checked) {
+
+                    // Function to update selection state
+                    const updateSelection = () => {
+                        if (checkbox.checked) {
                             this.selectedQuestionTypes.push(key);
                             itemDiv.classList.add('selected');
                         } else {
@@ -850,7 +852,9 @@ class MultiplayerManager {
                                 questionTypes: this.selectedQuestionTypes
                             });
                         }
-                    });
+                    };
+
+                    checkbox.addEventListener('change', updateSelection);
 
                     const label = document.createElement('label');
                     label.className = 'question-type-label';
@@ -860,12 +864,16 @@ class MultiplayerManager {
                         <span class="question-type-category">${this.getCategoryDisplayName(typeData.category)}</span>
                     `;
 
-                    // Make the whole div clickable
+                    // Make the whole div clickable (toggle anywhere)
                     itemDiv.addEventListener('click', (e) => {
-                        if (e.target !== checkbox) {
-                            checkbox.checked = !checkbox.checked;
-                            checkbox.dispatchEvent(new Event('change'));
-                        }
+                        // Stop propagation to prevent conflicts
+                        e.stopPropagation();
+
+                        // Toggle checkbox state
+                        checkbox.checked = !checkbox.checked;
+
+                        // Update selection
+                        updateSelection();
                     });
 
                     itemDiv.appendChild(checkbox);
