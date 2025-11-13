@@ -235,6 +235,51 @@ const UPGRADES = {
 
 // Question types are now imported from questionTypes.js
 
+// Helper function to normalize decimal answers for comparison
+function normalizeAnswer(answer) {
+    // Trim whitespace
+    let normalized = answer.trim();
+
+    // If it contains a comma (decimal separator in Norwegian)
+    if (normalized.includes(',')) {
+        // Remove trailing zeros after decimal point
+        // "1,0" -> "1", "2,50" -> "2,5", "3,00" -> "3"
+        normalized = normalized.replace(/,0+$/, ''); // Remove ,0 ,00 ,000 etc at end
+        normalized = normalized.replace(/(\,\d*[1-9])0+$/, '$1'); // Remove trailing zeros but keep significant digits
+
+        // If the result is just a number with empty decimal part, remove the comma
+        // This handles cases like "1," -> "1"
+        if (normalized.endsWith(',')) {
+            normalized = normalized.slice(0, -1);
+        }
+    }
+
+    return normalized;
+}
+
+// Helper function to check if two answers are equivalent
+function answersAreEquivalent(userAnswer, correctAnswer) {
+    const normalizedUser = normalizeAnswer(userAnswer);
+    const normalizedCorrect = normalizeAnswer(correctAnswer);
+
+    // Direct match after normalization
+    if (normalizedUser === normalizedCorrect) {
+        return true;
+    }
+
+    // Try parsing as numbers and comparing (for cases like "1" vs "1,0")
+    // Replace comma with period for parsing
+    const userNum = parseFloat(normalizedUser.replace(',', '.'));
+    const correctNum = parseFloat(normalizedCorrect.replace(',', '.'));
+
+    if (!isNaN(userNum) && !isNaN(correctNum)) {
+        // Use small epsilon for floating point comparison
+        return Math.abs(userNum - correctNum) < 0.0001;
+    }
+
+    return false;
+}
+
 function generateQuestion(difficulty, allowedTypes = null) {
     // Use allowed types if provided, otherwise use all types
     const questionTypeKeys = allowedTypes && allowedTypes.length > 0
@@ -862,7 +907,7 @@ export default class GameScene extends Phaser.Scene {
 
     checkAnswer(answer) {
         const feedbackText = document.getElementById('feedback-text');
-        const isCorrect = answer === this.currentQuestion.answer;
+        const isCorrect = answersAreEquivalent(answer, this.currentQuestion.answer);
 
         if (isCorrect) {
             // Give FULL ammo on correct answer

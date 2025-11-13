@@ -742,26 +742,38 @@ class MultiplayerManager {
     }
 
     setupQuestionTypeSelector() {
-        console.log('[SETUP-QUESTION-SELECTOR] Starting setup');
-        console.log('[SETUP-QUESTION-SELECTOR] QUESTION_TYPES:', QUESTION_TYPES);
-        console.log('[SETUP-QUESTION-SELECTOR] typeof QUESTION_TYPES:', typeof QUESTION_TYPES);
-        console.log('[SETUP-QUESTION-SELECTOR] QUESTION_TYPES keys:', Object.keys(QUESTION_TYPES || {}));
-        console.log('[SETUP-QUESTION-SELECTOR] Number of question types:', Object.keys(QUESTION_TYPES || {}).length);
+        try {
+            console.log('[SETUP-QUESTION-SELECTOR] Starting setup');
+            console.log('[SETUP-QUESTION-SELECTOR] QUESTION_TYPES:', QUESTION_TYPES);
+            console.log('[SETUP-QUESTION-SELECTOR] typeof QUESTION_TYPES:', typeof QUESTION_TYPES);
 
-        if (!QUESTION_TYPES || Object.keys(QUESTION_TYPES).length === 0) {
-            console.error('[SETUP-QUESTION-SELECTOR] ERROR: QUESTION_TYPES is empty or undefined!');
-            alert('ERROR: Question types not loaded. Please refresh the page.');
+            if (!QUESTION_TYPES) {
+                throw new Error('QUESTION_TYPES is undefined');
+            }
+
+            const keys = Object.keys(QUESTION_TYPES);
+            console.log('[SETUP-QUESTION-SELECTOR] QUESTION_TYPES keys:', keys);
+            console.log('[SETUP-QUESTION-SELECTOR] Number of question types:', keys.length);
+
+            if (keys.length === 0) {
+                throw new Error('QUESTION_TYPES has no entries');
+            }
+
+            const container = document.getElementById('question-types-list');
+            if (!container) {
+                throw new Error('Container element "question-types-list" not found in DOM');
+            }
+
+            console.log('[SETUP-QUESTION-SELECTOR] Container found:', container);
+            console.log('[SETUP-QUESTION-SELECTOR] Container current HTML length:', container.innerHTML.length);
+            container.innerHTML = '';
+            console.log('[SETUP-QUESTION-SELECTOR] Container cleared');
+        } catch (error) {
+            console.error('[SETUP-QUESTION-SELECTOR] FATAL ERROR:', error);
+            console.error('[SETUP-QUESTION-SELECTOR] Error stack:', error.stack);
+            alert(`ERROR loading question types: ${error.message}\n\nPlease refresh the page. If the problem persists, check browser console.`);
             return;
         }
-
-        const container = document.getElementById('question-types-list');
-        if (!container) {
-            console.error('[SETUP-QUESTION-SELECTOR] Container not found!');
-            return;
-        }
-
-        console.log('[SETUP-QUESTION-SELECTOR] Container found, clearing innerHTML');
-        container.innerHTML = '';
 
         // Initialize with NO types selected (empty array)
         this.selectedQuestionTypes = [];
@@ -786,55 +798,72 @@ class MultiplayerManager {
         // Create checkbox for each question type
         console.log('[SETUP-QUESTION-SELECTOR] Starting to create checkboxes...');
         let checkboxCount = 0;
-        Object.entries(QUESTION_TYPES).forEach(([key, typeData]) => {
-            console.log(`[SETUP-QUESTION-SELECTOR] Creating checkbox for: ${key} - ${typeData.name}`);
-            const itemDiv = document.createElement('div');
-            itemDiv.className = 'question-type-item'; // Start unselected
-            itemDiv.dataset.typeKey = key;
-            checkboxCount++;
 
-            const checkbox = document.createElement('input');
-            checkbox.type = 'checkbox';
-            checkbox.id = `qt-${key}`;
-            checkbox.checked = false; // Start unchecked
-            checkbox.addEventListener('change', (e) => {
-                if (e.target.checked) {
-                    this.selectedQuestionTypes.push(key);
-                    itemDiv.classList.add('selected');
-                } else {
-                    this.selectedQuestionTypes = this.selectedQuestionTypes.filter(k => k !== key);
-                    itemDiv.classList.remove('selected');
-                }
-                // Broadcast question type changes to all players in the room
-                if (this.isHost && this.roomCode) {
-                    this.socket.emit('question-types-updated', {
-                        roomCode: this.roomCode,
-                        questionTypes: this.selectedQuestionTypes
+        try {
+            Object.entries(QUESTION_TYPES).forEach(([key, typeData]) => {
+                try {
+                    console.log(`[SETUP-QUESTION-SELECTOR] Creating checkbox ${checkboxCount + 1} for: ${key}`);
+                    console.log(`[SETUP-QUESTION-SELECTOR] Type data:`, typeData);
+
+                    if (!typeData || !typeData.name) {
+                        throw new Error(`Question type "${key}" has invalid data: ${JSON.stringify(typeData)}`);
+                    }
+
+                    const itemDiv = document.createElement('div');
+                    itemDiv.className = 'question-type-item'; // Start unselected
+                    itemDiv.dataset.typeKey = key;
+                    checkboxCount++;
+
+                    const checkbox = document.createElement('input');
+                    checkbox.type = 'checkbox';
+                    checkbox.id = `qt-${key}`;
+                    checkbox.checked = false; // Start unchecked
+                    checkbox.addEventListener('change', (e) => {
+                        if (e.target.checked) {
+                            this.selectedQuestionTypes.push(key);
+                            itemDiv.classList.add('selected');
+                        } else {
+                            this.selectedQuestionTypes = this.selectedQuestionTypes.filter(k => k !== key);
+                            itemDiv.classList.remove('selected');
+                        }
+                        // Broadcast question type changes to all players in the room
+                        if (this.isHost && this.roomCode) {
+                            this.socket.emit('question-types-updated', {
+                                roomCode: this.roomCode,
+                                questionTypes: this.selectedQuestionTypes
+                            });
+                        }
                     });
+
+                    const label = document.createElement('label');
+                    label.className = 'question-type-label';
+                    label.htmlFor = `qt-${key}`;
+                    label.innerHTML = `
+                        <span class="question-type-name">${typeData.name}</span>
+                        <span class="question-type-category">${this.getCategoryDisplayName(typeData.category)}</span>
+                    `;
+
+                    // Make the whole div clickable
+                    itemDiv.addEventListener('click', (e) => {
+                        if (e.target !== checkbox) {
+                            checkbox.checked = !checkbox.checked;
+                            checkbox.dispatchEvent(new Event('change'));
+                        }
+                    });
+
+                    itemDiv.appendChild(checkbox);
+                    itemDiv.appendChild(label);
+                    container.appendChild(itemDiv);
+                    console.log(`[SETUP-QUESTION-SELECTOR] Appended checkbox ${checkboxCount} to container`);
+                } catch (itemError) {
+                    console.error(`[SETUP-QUESTION-SELECTOR] Error creating checkbox for ${key}:`, itemError);
+                    // Don't throw - continue with other items
                 }
             });
-
-            const label = document.createElement('label');
-            label.className = 'question-type-label';
-            label.htmlFor = `qt-${key}`;
-            label.innerHTML = `
-                <span class="question-type-name">${typeData.name}</span>
-                <span class="question-type-category">${this.getCategoryDisplayName(typeData.category)}</span>
-            `;
-
-            // Make the whole div clickable
-            itemDiv.addEventListener('click', (e) => {
-                if (e.target !== checkbox) {
-                    checkbox.checked = !checkbox.checked;
-                    checkbox.dispatchEvent(new Event('change'));
-                }
-            });
-
-            itemDiv.appendChild(checkbox);
-            itemDiv.appendChild(label);
-            container.appendChild(itemDiv);
-            console.log(`[SETUP-QUESTION-SELECTOR] Appended checkbox ${checkboxCount} to container`);
-        });
+        } catch (error) {
+            console.error('[SETUP-QUESTION-SELECTOR] Error in forEach loop:', error);
+            alert(`Error creating question checkboxes: ${error.message}`);
+        }
 
         console.log(`[SETUP-QUESTION-SELECTOR] Total checkboxes created: ${checkboxCount}`);
 
