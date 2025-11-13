@@ -16,6 +16,7 @@ class MultiplayerManager {
         this.passwordsSelected = new Map(); // Track who has selected password
         this.autoStartTimer = null; // Timer for auto-starting game
         this.autoStartCountdown = null; // Countdown interval
+        this.questionTypeSelectorInitialized = false; // Track if question selector has been set up
     }
 
     connect() {
@@ -744,6 +745,13 @@ class MultiplayerManager {
     setupQuestionTypeSelector() {
         try {
             console.log('[SETUP-QUESTION-SELECTOR] Starting setup');
+
+            // Check if already initialized
+            if (this.questionTypeSelectorInitialized) {
+                console.log('[SETUP-QUESTION-SELECTOR] Already initialized - skipping setup');
+                return;
+            }
+
             console.log('[SETUP-QUESTION-SELECTOR] QUESTION_TYPES:', QUESTION_TYPES);
             console.log('[SETUP-QUESTION-SELECTOR] typeof QUESTION_TYPES:', typeof QUESTION_TYPES);
 
@@ -777,6 +785,9 @@ class MultiplayerManager {
 
         // Initialize with NO types selected (empty array)
         this.selectedQuestionTypes = [];
+
+        // Mark as initialized
+        this.questionTypeSelectorInitialized = true;
 
         // Setup toggle button (only exists in Hacker mode, optional for UFO mode)
         const toggleBtn = document.getElementById('toggle-selector-btn');
